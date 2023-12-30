@@ -1,3 +1,3 @@
 ## Hanzo AI
 
- Hanzo is a data-driven launch pad and platform for modern online businesses. Using our AI-powered marketing engine and blockchain enabled e-commerce suite, we provide forward-thinking solutions that deliver for your business. 
+ Hanzo is an AI powered ecommerce platform designed for modern online businesses. Our AI-powered advertising and marketing engine provides unlimited growth for pioneering startups.
