@@ -3,10 +3,10 @@
 Hanzo is an award-winning Applied AI lab and a Techstars-backed AI Cloud and DX Platform, powered by open-source collaboration, sustainable AI development, and hyperscale infrastructure.
 
 #### Open
-Committed to an open, extensible infrastructure, our platform fosters transparency and collaboration, inviting the global community to shape its evolution.
+We build open, extensible infrastructure, our platform fosters transparency and collaboration, and we invite the global community to shape its evolution.
 
 #### Decentralized
-We champion a anti-fragile, hyperscale approach to AI that breaks free from big-tech silos, to ensure no single gatekeeper holds all the power in this new AI era.
+We champion anti-fragile, hyperscale AI that breaks free from big-tech silos, ensuring no single gatekeeper holds all the power in this new AI era.
 
 #### Pioneers
 
