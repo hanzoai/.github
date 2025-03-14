@@ -18,11 +18,14 @@ Committed to an open, extensible infrastructure, our platform fosters transparen
 We champion a anti-fragile, hyperscale approach to AI that breaks free from big-tech silos, to ensure no single gatekeeper holds all the power in this new AI era.
 
 ## Pioneers
-	•	AI Wearable Technology: Developed the first AI wearable, Myle Tap, a voice-capturing device that successfully launched on Indiegogo.
-	•	Automotive AI Integration: Hanzo's cutting edge AI platform powered Damon Motorcycles’ from pre-order to IPO in 2024.
-	•	Esports and Gaming: Played a pivotal role in Unikrn’s launch of UnikoinGold, culminating in its acquisition by Entain.
-	•	Entertainment Platforms: Launched Trillerfest for Triller, reaching over 169 million people globally and supporting their journey to IPO in 2024.
-	• Tech for Women: Launched Bellabeat LEAF, one of the earliest AI products designed for women, as of 2023, the company had a revenue of US$650 million, according to its investor Nordic Eye.
-  •	Supporting Open Source: Founding member of DEVxDAO, one of the first on-chain DAOs dedicated to supporting developers and open-source development of open public goods protocols.
+
+A few of our greatest hits:
+
+- AI Hardware: Developed the first AI wearable, Myle Tap, a voice-capturing device that successfully launched on Indiegogo.
+- AI Software: Hanzo's cutting edge AI platform powered Damon Motorcycles’ from pre-order to IPO in 2024.
+- AI Marketing: Played a pivotal role in Unikrn’s launch of UnikoinGold, culminating in its acquisition by Entain.
+- AI Growth: Launched Trillerfest for Triller, reaching over 169 million people globally and supporting their journey to IPO in 2024.
+- AI for Women: Launched Bellabeat LEAF, one of the earliest AI products designed for women, as of 2023, the company had a revenue of US$650 million, according to its investor Nordic Eye.
+- Open Source: Founding member of DEVxDAO, one of the first on-chain DAOs dedicated to supporting developers and open-source development of open public goods protocols.
 
 Together with our community, Hanzo AI is accelerating innovation and shaping a smarter, more inclusive future—one commit at a time.
