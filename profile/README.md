@@ -21,7 +21,7 @@ We champion a anti-fragile, hyperscale approach to AI that breaks free from big-
 
 A few of our greatest hits:
 
-- AI Hardware: Developed the first AI wearable, Myle Tap, a voice-capturing device that successfully launched on Indiegogo.
+- AI Hardware: Launched the first AI wearable, Myle Tap, a voice-capturing device integrated with next-gen AI in 2014.
 - AI Software: Hanzo's cutting edge AI platform powered Damon Motorcycles’ from pre-order to IPO in 2024.
 - AI Marketing: Played a pivotal role in Unikrn’s launch of UnikoinGold, culminating in its acquisition by Entain.
 - AI Growth: Launched Trillerfest for Triller, reaching over 169 million people globally and supporting their journey to IPO in 2024.
