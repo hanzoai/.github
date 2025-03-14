@@ -4,6 +4,6 @@ Hanzo is a Techstars-backed, award-winning applied [AI Lab](mailto:dev@hanzo.ai)
 
 We are commited to open-source collaboration, AI research, and anti-fragile infrastructure. 
 
-Leveraging hyperscale infrastructure, we provide AI solutions designed to cater to the needs of modern teams.
+Leveraging hyperscale infrastructure, we build AI designed to cater to the needs of modern teams.
 
 [Build the future with us](https://hanzo.ai)
