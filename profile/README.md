@@ -2,12 +2,6 @@
 
 Hanzo is an award-winning Applied AI lab and a Techstars-backed AI Cloud and DX Platform, powered by open-source collaboration, sustainable AI development, and hyperscale infrastructure.
 
-#### Mission
-Our mission is to democratize access to advanced AI infrastructure, embedding frontier AI capabilities directly into every developer’s workflow.
-
-#### DX Focus
-We equip developers with open-source AI tools and a seamless platform designed to supercharge productivity, enabling anyone to build applications and innovate without limits.
-
 #### Open
 Committed to an open, extensible infrastructure, our platform fosters transparency and collaboration, inviting the global community to shape its evolution.
 
