@@ -1,18 +1,23 @@
-Hanzo AI
+# Hanzo AI
 
 Hanzo is an award-winning Applied AI lab and a Techstars-backed AI Cloud and DX Platform, powered by open-source collaboration, sustainable AI development, and hyperscale infrastructure.
 
+## Mission
 Our mission is to democratize access to advanced AI infrastructure, embedding frontier AI capabilities directly into every developer’s workflow.
 
+## Ecosystem
 We envision an AI ecosystem that is accessible, ethical, and unstoppable—one where developers everywhere can build the next generation of applications with unprecedented speed and freedom.
 
-We equip developers with open-source AI tools and a seamless platform designed to supercharge productivity. By putting cutting-edge AI into developers’ hands, we enable them to build better applications faster and innovate without limits.
+## DX Focus
+We equip developers with open-source AI tools and a seamless platform designed to supercharge productivity, enabling anyone to build applications and innovate without limits.
 
+## Open
 Committed to an open, extensible infrastructure, our platform fosters transparency and collaboration, inviting the global community to shape its evolution.
 
-We champion a anti-fragile, hyperscale approach to AI that breaks free from big-tech silos. By distributing AI development across community-driven networks and resources, we ensure no single gatekeeper holds all the power in this new AI era.
+## Decentralized
+We champion a anti-fragile, hyperscale approach to AI that breaks free from big-tech silos, to ensure no single gatekeeper holds all the power in this new AI era.
 
-Pioneering Innovations and Collaborations:
+## Pioneers
 	•	AI Wearable Technology: Developed the first AI wearable, Myle Tap, a voice-capturing device that successfully launched on Indiegogo.
 	•	Automotive AI Integration: Hanzo's cutting edge AI platform powered Damon Motorcycles’ from pre-order to IPO in 2024.
 	•	Esports and Gaming: Played a pivotal role in Unikrn’s launch of UnikoinGold, culminating in its acquisition by Entain.
