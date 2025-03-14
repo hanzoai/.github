@@ -17,4 +17,3 @@ A few of our greatest hits:
 - AI Marketing: Designed and engineered Unikrn’s launch of UnikoinGold, which raised over 120,000 ETH in 2017.
 - AI Non-profit: Launched Trillerfest for Triller, supporting numerous charities reaching over 169 million people globally and supporting Triller on their journey to IPO.
 - AI for Women: Launched Bellabeat LEAF, one of the earliest AI products designed for women, as of 2023, the company had a revenue of US$650 million, according to its investor Nordic Eye.
-- Open Source: Founding member of DEVxDAO, one of the first on-chain DAOs dedicated to supporting developers and open-source development of open public goods protocols.
