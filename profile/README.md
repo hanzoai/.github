@@ -6,4 +6,4 @@ We are commited to open-source collaboration, AI research, and anti-fragile infr
 
 Leveraging hyperscale infrastructure, we build AI designed to cater to the needs of modern teams.
 
-[Build the future with us](https://hanzo.ai)
+[Build the future with us](https://hanzo.ai).
