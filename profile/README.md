@@ -18,5 +18,3 @@ A few of our greatest hits:
 - AI Non-profit: Launched Trillerfest for Triller, supporting numerous charities reaching over 169 million people globally and supporting Triller on their journey to IPO.
 - AI for Women: Launched Bellabeat LEAF, one of the earliest AI products designed for women, as of 2023, the company had a revenue of US$650 million, according to its investor Nordic Eye.
 - Open Source: Founding member of DEVxDAO, one of the first on-chain DAOs dedicated to supporting developers and open-source development of open public goods protocols.
-
-Together with the Open Source community, Hanzo AI is accelerating innovation and shaping a smarter, more inclusive future—one commit at a time.
