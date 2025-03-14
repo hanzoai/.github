@@ -22,9 +22,9 @@ We champion a anti-fragile, hyperscale approach to AI that breaks free from big-
 A few of our greatest hits:
 
 - AI Hardware: Launched the first AI wearable, Myle Tap, a voice-capturing device integrated with next-gen AI in 2014.
-- AI Software: Hanzo's cutting edge AI platform powered Damon Motorcycles’ from pre-order to IPO in 2024.
-- AI Marketing: Played a pivotal role in Unikrn’s launch of UnikoinGold, culminating in its acquisition by Entain.
-- AI Growth: Launched Trillerfest for Triller, reaching over 169 million people globally and supporting their journey to IPO in 2024.
+- AI Platform: Hanzo's cutting edge AI platform powered Damon Motorcycles’ from pre-order to IPO in 2024.
+- AI Marketing: Designed and engineered Unikrn’s launch of UnikoinGold, which raised over 120,000 ETH in 2017.
+- AI Non-profit: Launched Trillerfest for Triller, reaching over 169 million people globally and supporting their journey to IPO.
 - AI for Women: Launched Bellabeat LEAF, one of the earliest AI products designed for women, as of 2023, the company had a revenue of US$650 million, according to its investor Nordic Eye.
 - Open Source: Founding member of DEVxDAO, one of the first on-chain DAOs dedicated to supporting developers and open-source development of open public goods protocols.
 
