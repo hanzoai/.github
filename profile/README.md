@@ -22,4 +22,4 @@ A few of our greatest hits:
 - ZOO in 2021, $5M+ NFT sales, and market cap reaching an all-time high of over US$2.7B, now a sovereign L1 blockchain
 - LUX in 2022, $10M+ NFT sales with billions of dollars in real world assets tokenized, now a sovereign L1 blockchain
 
-[Lets build together](https://hanzo.ai)!
+[Build the future with us](https://hanzo.ai)
