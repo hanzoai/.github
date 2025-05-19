@@ -1,4 +1,4 @@
-## Award-winning applied AI Lab | Techstars-backed | Pioneers of scalable, secure, and open AI systems
+### Award-winning applied AI Lab | Techstars-backed | Pioneers of scalable, secure, and open AI systems
 
 Hanzo is the engine behind countless disruptive startups, delivering frontier AI across:
 	•	Large Language Models (LLMs)
