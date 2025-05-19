@@ -7,6 +7,7 @@ We develop state-of-the-art LLMs, diffusion models, and agent systems — deploy
 Our unified AI Cloud powers the next generation of growth systems — from adtech, martech, and fintech to DeFi — all running on a secure, modular foundation built for real-world scale.
 
 From deep research to real-time inference, Hanzo is building:
+
 ⚛️ **Zen** — Dual-mode Mixture-of-Experts LLM (Qwen3 + DeepSeek V3)  
 🧠 **Enso** — Multimodal diffusion transformer (text, vision, audio, and beyond)
 🌀 **Genjo** — Diffusion-first language model for multimodal generation  
