@@ -1,7 +1,10 @@
-Hanzo is an award-winning, Techstars-backed applied <a href="mailto:research@hanzo.ai">AI Lab</a>⁠, <a href="https://hanzo.ai">AI Cloud</a>, and <a href="https://hanzo.team">AI Team</a> focused on scalable, secure, and open systems.
+# hanzo.ai | @hanzoai | dev@hanzo.ai
 
-We build frontier AI—spanning LLMs, agent orchestration, and robotics—on resilient, decentralized infrastructure.
+## Award-winning applied AI Lab | Techstars-backed | Pioneers of scalable, secure, and open AI systems
 
-From deep research to real-time edge deployments, our stack is open, modular, and future-ready.
+Hanzo is the engine behind countless disruptive startups, delivering frontier AI across:
+	•	Large Language Models (LLMs)
+	•	Agent orchestration & robotics
+	•	Robust, decentralized cloud infrastructure
 
-Together, we shape the next era of intelligence.
+Our AI stack spans from deep research to real-time edge deployment — modular, open, and built for the future.
