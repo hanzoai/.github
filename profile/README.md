@@ -1,4 +1,4 @@
-# hanzo.ai | @hanzoai | dev@hanzo.ai
+# hanzo.ai | <a href="https://x.com/hanzoai">@hanzoai</a> | research@hanzo.ai
 
 ## Award-winning applied AI Lab | Techstars-backed | Pioneers of scalable, secure, and open AI systems
 
