@@ -9,12 +9,11 @@ Our unified AI Cloud powers the next generation of growth systems — from adtec
 From deep research to real-time inference, Hanzo is building:
 
 - ⚛️ **Zen** — Dual-mode Mixture-of-Experts LLM (Qwen3 + DeepSeek V3)  
-- 🌀 **Koan** — Diffusion-first language model for multimodal generation  
-- 🧠 **Enso** — Multimodal diffusion transformer (text, vision, audio, and beyond)  
+- 🧠 **Enso** — Multimodal diffusion transformer (text, vision, audio, and beyond)
+- 🌀 **Genjo** — Diffusion-first language model for multimodal generation  
 - 🕊️ **Jin** — Predictive sensor learning for robotics, UAVs, and edge intelligence  
 - 🌸 **Kensho** — 17B parameter image model for high-speed, photoreal generation  
 - 🎞️ **Satori** — Efficient video diffusion with temporal dynamics  
-- ✨ **AI SDK** — Your gateway to models, memory, and modular compute  
 
 We build open systems to empower autonomous organizations, accelerate human-AI collaboration, and shape the next era of intelligence.
 
