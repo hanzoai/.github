@@ -1,6 +1,6 @@
 # Hanzo
 
-Hanzo is a Techstars- and NVIDIA-backed applied AI Lab, AI Cloud, and AI Team building frontier models and scalable, open infrastructure for the intelligent economy.
+Hanzo is a Techstars and NVIDIA-backed applied AI Lab, AI Cloud, and AI Team building frontier models and scalable, open infrastructure for the intelligent economy.
 
 We develop state-of-the-art LLMs, diffusion models, and agent systems — deployable anywhere, from GPU clusters to edge swarms.
 
