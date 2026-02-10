@@ -1,125 +1,98 @@
-# Hanzo AI 🤖
+# Hanzo AI
 
-**Frontier AI Infrastructure**
+AI infrastructure for the agentic era. LLM gateway, MCP tools, multi-agent SDKs, and developer tools for building, deploying, and managing AI applications at scale.
 
-Hanzo AI (Techstars '17) builds cutting-edge AI infrastructure including LLMs, agent frameworks, and decentralized compute networks.
+[![Discord](https://img.shields.io/discord/1234567890?label=Discord&logo=discord)](https://discord.gg/hanzo)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 
-## 🏗️ Architecture
+Hanzo AI (Techstars '17) provides the complete AI development stack — from model serving through 100+ LLM providers, to 260+ MCP tools for AI agents, to multi-agent orchestration SDKs, and full-stack deployment infrastructure. Built for developers shipping AI-native applications.
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                      Hanzo AI Stack                             │
-├─────────────────────────────────────────────────────────────────┤
-│  Applications                                                   │
-│  ┌──────────┬─────────────┬───────────────┬──────────────┐      │
-│  │   Chat   │   Search    │    Agents     │   Platform   │      │
-│  └────┬─────┴──────┬──────┴───────┬───────┴───────┬──────┘      │
-│       │            │              │               │             │
-│  ┌────▼────────────▼──────────────▼───────────────▼──────┐      │
-│  │              LLM Gateway (100+ providers)              │      │
-│  └────┬──────────────────────────────────────────────────┘      │
-│       │                                                         │
-│  ┌────▼────────────────────────────────────────────────────┐    │
-│  │           Model Context Protocol (MCP)                  │    │
-│  │                  260+ Tools                              │    │
-│  └────┬────────────────────────────────────────────────────┘    │
-│       │                                                         │
-│  ┌────▼────────────────────────────────────────────────────┐    │
-│  │          Jin (Multimodal) • Candle (Rust ML)            │    │
-│  └────┬────────────────────────────────────────────────────┘    │
-│       │                                                         │
-│  ┌────▼────────────────────────────────────────────────────┐    │
-│  │         Hanzo Network (Decentralized Compute)           │    │
-│  └─────────────────────────────────────────────────────────┘    │
-└─────────────────────────────────────────────────────────────────┘
+## Quick Start
+
+```bash
+# LLM Gateway — unified proxy for 100+ providers
+pip install hanzo
+hanzo gateway --port 4000
+
+# MCP Tools — 260+ tools for AI agents
+npm install -g @hanzo/mcp
+
+# AI coding agent in your terminal
+pip install hanzo-dev
+hanzo-dev
 ```
 
-## 📦 Core Repositories
+## Architecture
 
-### AI Infrastructure
-| Repository | Description | Language |
-|------------|-------------|----------|
-| [llm](https://github.com/hanzoai/llm) | LLM Gateway (100+ providers) | Python |
-| [mcp](https://github.com/hanzoai/mcp) | Model Context Protocol tools | TypeScript |
-| [agent](https://github.com/hanzoai/agent) | Multi-agent SDK | Python |
-| [jin](https://github.com/hanzoai/jin) | Multimodal LLM framework | Python |
-| [candle](https://github.com/hanzoai/candle) | Rust ML framework | Rust |
+```
+Applications:  Chat  |  Search  |  Code  |  Dev  |  Flow
+                     |          |        |       |
+Gateway:       LLM Gateway (100+ providers, load balancing, caching)
+                     |
+Protocol:      Model Context Protocol (260+ tools)
+                     |
+Models:        Jin (multimodal)  |  Zen LM (frontier)  |  Any provider
+                     |
+Compute:       Hanzo Network (decentralized AI compute)
+```
 
-### Applications
-| Repository | Description | Language |
-|------------|-------------|----------|
-| [chat](https://github.com/hanzoai/chat) | AI chat interface | TypeScript |
-| [search](https://github.com/hanzoai/search) | AI-powered search | TypeScript |
-| [flow](https://github.com/hanzoai/flow) | Visual workflow builder | TypeScript |
-| [platform](https://github.com/hanzoai/platform) | PaaS platform | TypeScript |
-| [operative](https://github.com/hanzoai/operative) | Computer use agent | Python |
+## Core Projects
+
+### Infrastructure
+| Project | Description |
+|---------|-------------|
+| [gateway](https://github.com/hanzoai/gateway) | Unified LLM gateway — 100+ providers, load balancing, caching |
+| [mcp](https://github.com/hanzoai/mcp) | Model Context Protocol server with 260+ tools for AI agents |
+| [agent](https://github.com/hanzoai/agent) | Multi-agent SDK with OpenAI-compatible API |
+| [console](https://github.com/hanzoai/console) | LLM dev environment — debug, fine-tune, monitor |
+| [cloud](https://github.com/hanzoai/cloud) | Unified AI infrastructure and MCP management platform |
+
+### Developer Tools
+| Project | Description |
+|---------|-------------|
+| [code](https://github.com/hanzoai/code) | Open source AI code editor — any model, full data control |
+| [dev](https://github.com/hanzoai/dev) | AI coding agent in your terminal |
+| [cli](https://github.com/hanzoai/cli) | Deploy, manage, and interact with AI infrastructure |
+| [flow](https://github.com/hanzoai/flow) | Visual drag-and-drop AI workflow builder |
+| [search](https://github.com/hanzoai/search) | AI-powered search with generative UI |
 
 ### SDKs
-| Repository | Description | Language |
-|------------|-------------|----------|
-| [python-sdk](https://github.com/hanzoai/python-sdk) | Python SDK (8 packages) | Python |
-| [js-sdk](https://github.com/hanzoai/js-sdk) | TypeScript SDK | TypeScript |
-| [go-sdk](https://github.com/hanzoai/go-sdk) | Go SDK | Go |
-| [rust-sdk](https://github.com/hanzoai/rust-sdk) | Rust SDK | Rust |
+| Language | Package |
+|----------|---------|
+| Python | [python-sdk](https://github.com/hanzoai/python-sdk) — `pip install hanzo` |
+| TypeScript | [js-sdk](https://github.com/hanzoai/js-sdk) — `npm install @hanzo/api` |
+| Go | [go-sdk](https://github.com/hanzoai/go-sdk) — `go get github.com/hanzoai/go-sdk` |
+| Rust | [rust-sdk](https://github.com/hanzoai/rust-sdk) — `cargo add hanzo` |
 
-### Network & Compute
-| Repository | Description | Language |
-|------------|-------------|----------|
-| [node](https://github.com/hanzoai/node) | Compute node | Rust |
-| [mpc](https://github.com/hanzoai/mpc) | Multi-party computation | Go |
-| [docs](https://github.com/hanzoai/docs) | Documentation | TypeScript |
+### AI Research
+| Project | Description |
+|---------|-------------|
+| [jin](https://github.com/hanzoai/jin) | Multimodal AI — vision, audio, 3D embeddings |
+| [operative](https://github.com/hanzoai/operative) | Autonomous computer use agent for Claude |
+| [node](https://github.com/hanzoai/node) | Hanzo Network node for decentralized AI compute |
+| [contracts](https://github.com/hanzoai/contracts) | Smart contracts — ERC20, staking, governance |
 
-## 🚀 Quick Start
+## Key Protocols
 
-### LLM Gateway
-```bash
-cd llm
-make dev
-# Available at http://localhost:4000
-```
+| Protocol | Proposal | Purpose |
+|----------|----------|---------|
+| ASO | HIP-002 | Active Semantic Optimization |
+| HMM | HIP-004 | Hamiltonian Market Maker |
 
-### MCP Tools
-```bash
-npm install -g @hanzo/mcp
-hanzo-mcp --help
-```
+## Related Organizations
 
-### Chat
-```bash
-cd chat
-make up
-# Available at http://localhost:3081
-```
+| Organization | Focus |
+|--------------|-------|
+| [Zen LM](https://github.com/zenlm) | Frontier language models (600M-480B params) |
+| [Lux Network](https://github.com/luxfi) | Post-quantum blockchain, FHE, cross-chain |
+| [Zoo Labs](https://github.com/zoo-labs) | Open AI research network (501c3) |
 
-## 🔗 Related Organizations
+## Resources
 
-| Organization | Focus | Link |
-|--------------|-------|------|
-| **Hanzo AI** | AI infrastructure | [github.com/hanzoai](https://github.com/hanzoai) |
-| **Zen LM** | Frontier models (600M-480B) | [github.com/zenlm](https://github.com/zenlm) |
-| **Lux Network** | Blockchain settlement | [github.com/luxfi](https://github.com/luxfi) |
-| **Lux FHE** | Private computation | [github.com/luxfhe](https://github.com/luxfhe) |
-| **Zoo Labs** | Open AI research | [github.com/zoo-labs](https://github.com/zoo-labs) |
+- [hanzo.ai](https://hanzo.ai) — Website
+- [docs.hanzo.ai](https://docs.hanzo.ai) — Documentation
+- [hanzo.network](https://hanzo.network) — Compute marketplace
 
-## 📋 Key Protocols
+Apache 2.0 -- See individual repositories for details.
 
-| Protocol | HIP | Purpose |
-|----------|-----|---------|
-| **ASO** | HIP-002 | Active Semantic Optimization |
-| **HMM** | HIP-004 | Hamiltonian Market Maker |
-| **DSO** | ZIP-001 | Decentralized Semantic Optimization |
-| **PoAI** | ZIP-002 | Proof of AI |
-
-## 📚 Resources
-
-- **Website:** [hanzo.ai](https://hanzo.ai)
-- **Docs:** [docs.hanzo.ai](https://docs.hanzo.ai)
-- **Network:** [hanzo.network](https://hanzo.network)
-
-## 📄 License
-
-Apache 2.0 - See individual repositories for details.
-
----
-
-**Hanzo AI Inc. • Techstars '17 • San Francisco**
+*Hanzo AI Inc. -- Techstars '17 -- San Francisco*
