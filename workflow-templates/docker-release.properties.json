@@ -1,0 +1,6 @@
+{
+  "name": "Hanzo Docker Release",
+  "description": "Native multi-arch Docker build (amd64 + arm64) with optional K8s deploy. No QEMU.",
+  "iconName": "docker",
+  "categories": ["Docker", "CI/CD"]
+}
