@@ -139,7 +139,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
-          password: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract metadata
         id: meta
@@ -190,7 +190,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
-          password: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract metadata
         id: meta
@@ -220,7 +220,7 @@ jobs:
           provenance: false
           push: ${{ inputs.push }}
 
-  # ── Multi-platform manifest ──────────────────────────────────
+  # ── Multi-platform manifest (both platforms) ─────────────────
   create-manifest:
     if: inputs.push && contains(inputs.platforms, 'linux/amd64') && contains(inputs.platforms, 'linux/arm64')
     runs-on: ${{ inputs.runner-amd64 }}
@@ -236,7 +236,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
-          password: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract metadata
         id: meta
@@ -264,13 +264,65 @@ jobs:
         env:
           DOCKER_METADATA_OUTPUT_JSON: ${{ steps.meta.outputs.json }}
 
+  # ── Single-platform tagging (when only one arch is built) ────
+  tag-single:
+    if: inputs.push && !(contains(inputs.platforms, 'linux/amd64') && contains(inputs.platforms, 'linux/arm64'))
+    runs-on: ${{ inputs.runner-amd64 }}
+    needs: [build-amd64, build-arm64]
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ inputs.image }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+
+      - name: Tag single-arch image
+        run: |
+          IMAGE="${{ inputs.image }}"
+          # Use whichever digest is available
+          DIGEST="${{ needs.build-amd64.outputs.digest || needs.build-arm64.outputs.digest }}"
+          echo "Tagging single-arch image ${IMAGE}@${DIGEST}"
+          docker buildx imagetools create \
+            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
+            "${IMAGE}@${DIGEST}"
+        env:
+          DOCKER_METADATA_OUTPUT_JSON: ${{ steps.meta.outputs.json }}
+
   # ── Deploy (optional) ────────────────────────────────────────
   deploy:
-    if: inputs.deploy && github.ref == 'refs/heads/main'
+    if: ${{ always() && inputs.deploy && github.ref == 'refs/heads/main' && !cancelled() }}
     runs-on: ${{ inputs.runner-deploy }}
-    needs: [create-manifest]
+    needs: [build-amd64, build-arm64, create-manifest, tag-single]
     environment: production
     steps:
+      - name: Check build results
+        run: |
+          # At least one build must have succeeded
+          if [[ "${{ needs.build-amd64.result }}" != "success" && "${{ needs.build-arm64.result }}" != "success" ]]; then
+            echo "No builds succeeded, skipping deploy"
+            exit 1
+          fi
+          # Either manifest or single-tag must have succeeded (or been skipped)
+          if [[ "${{ needs.create-manifest.result }}" == "failure" || "${{ needs.tag-single.result }}" == "failure" ]]; then
+            echo "Tagging failed, skipping deploy"
+            exit 1
+          fi
+
       - name: Install kubectl
         run: |
           curl -sLO "https://dl.k8s.io/release/$(curl -sL https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
