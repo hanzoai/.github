@@ -324,11 +324,44 @@ jobs:
           echo "${PWD}" >> "$GITHUB_PATH"
 
       - name: Deploy
+        env:
+          DEPLOYMENT: ${{ inputs.deploy-deployment }}
+          NAMESPACE: ${{ inputs.deploy-namespace }}
+          TIMEOUT: ${{ inputs.deploy-timeout }}
         run: |
-          echo "Deploying ${{ inputs.deploy-deployment }} in namespace ${{ inputs.deploy-namespace }}"
-          kubectl rollout restart deployment/${{ inputs.deploy-deployment }} \
-            -n ${{ inputs.deploy-namespace }}
-          kubectl rollout status deployment/${{ inputs.deploy-deployment }} \
-            -n ${{ inputs.deploy-namespace }} \
-            --timeout=${{ inputs.deploy-timeout }}
-          echo "Deploy complete: ${{ inputs.deploy-deployment }} restarted"
+          echo "Deploying ${DEPLOYMENT} in namespace ${NAMESPACE}"
+          kubectl rollout restart deployment/${DEPLOYMENT} -n ${NAMESPACE}
+
+          # Poll deployment status using 'kubectl get' (requires only get permission,
+          # not watch). This avoids the permission error from 'kubectl rollout status'
+          # which requires watch on deployments.
+          TIMEOUT_SECS="${TIMEOUT%s}"
+          ELAPSED=0
+          INTERVAL=10
+          echo "Waiting up to ${TIMEOUT_SECS}s for deployment/${DEPLOYMENT} to become available..."
+          while [ "${ELAPSED}" -lt "${TIMEOUT_SECS}" ]; do
+            AVAILABLE=$(kubectl get deployment/${DEPLOYMENT} -n ${NAMESPACE} \
+              -o jsonpath='{.status.conditions[?(@.type=="Available")].status}' 2>/dev/null || echo "Unknown")
+            UPDATED=$(kubectl get deployment/${DEPLOYMENT} -n ${NAMESPACE} \
+              -o jsonpath='{.status.updatedReplicas}' 2>/dev/null || echo "0")
+            READY=$(kubectl get deployment/${DEPLOYMENT} -n ${NAMESPACE} \
+              -o jsonpath='{.status.readyReplicas}' 2>/dev/null || echo "0")
+            DESIRED=$(kubectl get deployment/${DEPLOYMENT} -n ${NAMESPACE} \
+              -o jsonpath='{.spec.replicas}' 2>/dev/null || echo "1")
+            UNAVAILABLE=$(kubectl get deployment/${DEPLOYMENT} -n ${NAMESPACE} \
+              -o jsonpath='{.status.unavailableReplicas}' 2>/dev/null || echo "")
+
+            echo "[${ELAPSED}s] available=${AVAILABLE} updated=${UPDATED} ready=${READY}/${DESIRED} unavailable=${UNAVAILABLE:-0}"
+
+            if [ "${AVAILABLE}" = "True" ] && [ "${READY}" = "${DESIRED}" ] && [ -z "${UNAVAILABLE}" ]; then
+              echo "Deploy complete: ${DEPLOYMENT} rolled out successfully"
+              exit 0
+            fi
+
+            sleep ${INTERVAL}
+            ELAPSED=$((ELAPSED + INTERVAL))
+          done
+
+          echo "ERROR: Timed out after ${TIMEOUT_SECS}s waiting for deployment/${DEPLOYMENT}"
+          kubectl get deployment/${DEPLOYMENT} -n ${NAMESPACE} -o yaml
+          exit 1
