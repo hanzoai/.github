@@ -257,10 +257,18 @@ jobs:
   # skipped (it requires both). This job ensures the arch-specific
   # image still gets tagged as :latest / :main / :vX.Y.Z.
   #
+  # Uses always() because the non-requested arch job is skipped,
+  # and GitHub Actions auto-skips dependents of skipped jobs unless
+  # always() is present in the if condition.
+  #
   tag-single-arch:
     if: >-
+      always() &&
       inputs.push &&
-      !(contains(inputs.platforms, 'linux/amd64') && contains(inputs.platforms, 'linux/arm64'))
+      !(contains(inputs.platforms, 'linux/amd64') && contains(inputs.platforms, 'linux/arm64')) &&
+      (needs.build-amd64.result == 'success' || needs.build-arm64.result == 'success') &&
+      !(needs.build-amd64.result == 'failure' || needs.build-arm64.result == 'failure') &&
+      !(needs.build-amd64.result == 'cancelled' || needs.build-arm64.result == 'cancelled')
     runs-on: ${{ inputs.runner-amd64 }}
     needs: [build-amd64, build-arm64]
     permissions:
