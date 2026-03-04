@@ -1,0 +1,310 @@
+name: PR Preview (Reusable)
+
+# Reusable PR preview workflow for DOKS + Traefik.
+# Builds a preview image, deploys to a per-PR namespace, creates
+# a Traefik IngressRoute with wildcard TLS, runs E2E smoke tests,
+# and cleans up on PR close.
+#
+# Prerequisites:
+#   - Wildcard DNS: *.preview.hanzo.ai → hanzo-k8s cluster IP
+#   - Wildcard TLS cert: cert-manager Certificate for *.preview.hanzo.ai
+#   - DIGITALOCEAN_ACCESS_TOKEN secret in org
+#   - hanzo-k8s runner with kubectl access
+#
+# Usage:
+#   jobs:
+#     preview:
+#       uses: hanzoai/.github/.github/workflows/pr-preview.yml@main
+#       with:
+#         service: console
+#         image: ghcr.io/hanzoai/console
+#         port: 3000
+#       secrets: inherit
+
+on:
+  workflow_call:
+    inputs:
+      service:
+        description: "Service name (used in URL and namespace)"
+        required: true
+        type: string
+      image:
+        description: "Full GHCR image name"
+        required: true
+        type: string
+      port:
+        description: "Container port"
+        default: "3000"
+        type: string
+      dockerfile:
+        description: "Dockerfile path"
+        default: "Dockerfile"
+        type: string
+      context:
+        description: "Docker build context"
+        default: "."
+        type: string
+      health-path:
+        description: "Health check endpoint"
+        default: "/"
+        type: string
+      env-configmap:
+        description: "Optional ConfigMap name with env vars"
+        default: ""
+        type: string
+      preview-domain:
+        description: "Base domain for previews"
+        default: "preview.hanzo.ai"
+        type: string
+      runner-build:
+        description: "Runner for build jobs"
+        default: "hanzo-build"
+        type: string
+      runner-deploy:
+        description: "Runner for deploy jobs (needs kubectl)"
+        default: "hanzo-k8s"
+        type: string
+      e2e-enabled:
+        description: "Run E2E smoke tests after deploy"
+        default: true
+        type: boolean
+      e2e-dir:
+        description: "Directory containing Playwright tests"
+        default: "."
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+  PREVIEW_DOMAIN: ${{ inputs.preview-domain }}
+
+jobs:
+  # ── Build preview image ──────────────────────────────────────
+  build:
+    if: github.event.action != 'closed'
+    runs-on: ${{ inputs.runner-build }}
+    permissions:
+      packages: write
+      contents: read
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      url: ${{ steps.tag.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute preview tag
+        id: tag
+        run: |
+          PR=${{ github.event.pull_request.number }}
+          TAG="pr-${PR}"
+          URL="https://pr-${PR}-${{ inputs.service }}.${PREVIEW_DOMAIN}"
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
+          echo "url=${URL}" >> $GITHUB_OUTPUT
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ inputs.context }}
+          file: ${{ inputs.dockerfile }}
+          push: true
+          tags: ${{ inputs.image }}:${{ steps.tag.outputs.tag }}
+          cache-from: type=registry,ref=${{ inputs.image }}-cache:preview
+          cache-to: type=registry,ref=${{ inputs.image }}-cache:preview,mode=max
+          provenance: false
+          build-args: |
+            ENVIRONMENT=preview
+            PR_NUMBER=${{ github.event.pull_request.number }}
+
+  # ── Deploy to DOKS ───────────────────────────────────────────
+  deploy:
+    if: github.event.action != 'closed'
+    needs: build
+    runs-on: ${{ inputs.runner-deploy }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy preview
+        env:
+          PR: ${{ github.event.pull_request.number }}
+          SERVICE: ${{ inputs.service }}
+          IMAGE: ${{ inputs.image }}:${{ needs.build.outputs.tag }}
+          PORT: ${{ inputs.port }}
+          HEALTH: ${{ inputs.health-path }}
+          HOST: pr-${{ github.event.pull_request.number }}-${{ inputs.service }}.${{ env.PREVIEW_DOMAIN }}
+        run: |
+          NS="preview-${SERVICE}-${PR}"
+
+          # Create namespace
+          kubectl create namespace "${NS}" --dry-run=client -o yaml | kubectl apply -f -
+          kubectl label namespace "${NS}" preview=true pr="${PR}" --overwrite
+
+          # Deploy service + Traefik IngressRoute
+          kubectl apply -n "${NS}" -f - <<EOF
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: ${SERVICE}
+            labels:
+              app: ${SERVICE}
+              preview: "true"
+          spec:
+            replicas: 1
+            selector:
+              matchLabels:
+                app: ${SERVICE}
+            template:
+              metadata:
+                labels:
+                  app: ${SERVICE}
+              spec:
+                containers:
+                - name: ${SERVICE}
+                  image: ${IMAGE}
+                  ports:
+                  - containerPort: ${PORT}
+                  readinessProbe:
+                    httpGet:
+                      path: ${HEALTH}
+                      port: ${PORT}
+                    initialDelaySeconds: 10
+                    periodSeconds: 5
+                  resources:
+                    requests:
+                      memory: 256Mi
+                      cpu: 100m
+                    limits:
+                      memory: 512Mi
+                      cpu: 500m
+                imagePullSecrets:
+                - name: ghcr-pull-secret
+          ---
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: ${SERVICE}
+          spec:
+            selector:
+              app: ${SERVICE}
+            ports:
+            - port: 80
+              targetPort: ${PORT}
+          ---
+          apiVersion: traefik.io/v1alpha1
+          kind: IngressRoute
+          metadata:
+            name: ${SERVICE}
+          spec:
+            entryPoints:
+            - websecure
+            routes:
+            - match: "Host(\`${HOST}\`)"
+              kind: Rule
+              services:
+              - name: ${SERVICE}
+                port: 80
+            tls:
+              secretName: preview-wildcard-tls
+          EOF
+
+          # Wait for rollout
+          kubectl rollout status deployment/${SERVICE} -n "${NS}" --timeout=300s
+
+      - name: Comment PR with preview URL
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.issue.number;
+            const url = '${{ needs.build.outputs.url }}';
+            const service = '${{ inputs.service }}';
+
+            const body = `### Preview: **${service}**\n` +
+              `URL: [${url}](${url})\n\n` +
+              `Image: \`${{ inputs.image }}:${{ needs.build.outputs.tag }}\`\n\n` +
+              `> Auto-destroyed on PR close.\n\n` +
+              `_Updated: ${new Date().toISOString()}_`;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: pr,
+            });
+            const existing = comments.find(c =>
+              c.user.type === 'Bot' && c.body.includes(`Preview: **${service}**`)
+            );
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                comment_id: existing.id, body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner, repo: context.repo.repo,
+                issue_number: pr, body,
+              });
+            }
+
+  # ── E2E smoke tests ─────────────────────────────────────────
+  e2e:
+    if: github.event.action != 'closed' && inputs.e2e-enabled
+    needs: [build, deploy]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+
+      - name: Run smoke tests
+        working-directory: ${{ inputs.e2e-dir }}
+        env:
+          BASE_URL: ${{ needs.build.outputs.url }}
+          PLAYWRIGHT_BASE_URL: ${{ needs.build.outputs.url }}
+        run: |
+          # Use service-specific tests if they exist, otherwise generic smoke
+          if [ -f "playwright.config.ts" ] || [ -f "playwright.config.js" ]; then
+            npx playwright test --project=chromium --reporter=html
+          else
+            npx playwright test --reporter=html
+          fi
+
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-preview-${{ inputs.service }}-pr${{ github.event.pull_request.number }}
+          path: '**/playwright-report/'
+          retention-days: 7
+
+  # ── Cleanup on PR close ─────────────────────────────────────
+  cleanup:
+    if: github.event.action == 'closed'
+    runs-on: ${{ inputs.runner-deploy }}
+    steps:
+      - name: Delete preview namespace
+        run: |
+          NS="preview-${{ inputs.service }}-${{ github.event.pull_request.number }}"
+          kubectl delete namespace "${NS}" --ignore-not-found=true
+
+      - name: Comment cleanup
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner, repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `Preview for **${{ inputs.service }}** has been cleaned up.`,
+            });
