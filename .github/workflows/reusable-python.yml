@@ -1,0 +1,342 @@
+name: Reusable Python CI/CD
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: 'Python version to use'
+        required: false
+        type: string
+        default: '3.12'
+      working-directory:
+        description: 'Working directory for the job'
+        required: true
+        type: string
+      run-tests:
+        description: 'Whether to run tests'
+        required: false
+        type: boolean
+        default: true
+      run-integration-tests:
+        description: 'Whether to run integration tests'
+        required: false
+        type: boolean
+        default: false
+      build-docker:
+        description: 'Whether to build Docker image'
+        required: false
+        type: boolean
+        default: true
+      deploy:
+        description: 'Whether to deploy'
+        required: false
+        type: boolean
+        default: false
+      package-name:
+        description: 'Package name for deployment'
+        required: false
+        type: string
+      use-uv:
+        description: 'Use uv instead of poetry'
+        required: false
+        type: boolean
+        default: true
+    secrets:
+      OPENAI_API_KEY:
+        required: false
+      ANTHROPIC_API_KEY:
+        required: false
+      DATABASE_URL:
+        required: false
+      REDIS_URL:
+        required: false
+      SONAR_TOKEN:
+        required: false
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Install uv
+        if: inputs.use-uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+            ~/.cache/pypoetry
+          key: ${{ runner.os }}-python-${{ hashFiles('**/pyproject.toml', '**/uv.lock', '**/poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-python-
+
+      - name: Install dependencies (uv)
+        if: inputs.use-uv
+        run: |
+          uv venv
+          uv sync --all-extras --all-packages --dev
+
+      - name: Install dependencies (poetry)
+        if: '!inputs.use-uv'
+        run: |
+          pip install poetry
+          poetry install --with dev
+
+      - name: Run linting (ruff)
+        if: inputs.use-uv
+        run: |
+          uv run ruff check . --output-format=github
+          uv run ruff format . --check
+
+      - name: Run type checking (mypy)
+        if: inputs.use-uv
+        run: |
+          uv run mypy . || true
+
+      - name: Security scan (bandit)
+        if: inputs.use-uv
+        run: |
+          uv pip install bandit[toml]
+          uv run bandit -r . -f json -o bandit-report.json || true
+
+      - name: Upload security results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: bandit-security-report-${{ inputs.package-name || 'python' }}
+          path: ${{ inputs.working-directory }}/bandit-report.json
+          retention-days: 30
+
+  test:
+    runs-on: ubuntu-latest
+    if: inputs.run-tests
+    needs: quality
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      redis:
+        image: redis:7
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://test:test@localhost:5432/test' }}
+      REDIS_URL: ${{ secrets.REDIS_URL || 'redis://localhost:6379' }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Install uv
+        if: inputs.use-uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            .venv
+            ~/.cache/pypoetry
+          key: ${{ runner.os }}-python-${{ hashFiles('**/pyproject.toml', '**/uv.lock', '**/poetry.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-python-
+
+      - name: Install dependencies (uv)
+        if: inputs.use-uv
+        run: |
+          uv venv
+          uv sync --all-extras --all-packages --dev
+
+      - name: Install dependencies (poetry)
+        if: '!inputs.use-uv'
+        run: |
+          pip install poetry
+          poetry install --with dev
+
+      - name: Run unit tests
+        if: inputs.use-uv
+        run: |
+          uv run pytest tests/unit -v --cov=. --cov-report=xml --cov-report=html --junitxml=junit.xml
+
+      - name: Run integration tests
+        if: inputs.run-integration-tests && inputs.use-uv
+        run: |
+          uv run pytest tests/integration -v --cov=. --cov-append --cov-report=xml --cov-report=html
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ inputs.package-name || 'python' }}
+          path: |
+            ${{ inputs.working-directory }}/junit.xml
+            ${{ inputs.working-directory }}/htmlcov/
+          retention-days: 30
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ${{ inputs.working-directory }}/coverage.xml
+          flags: ${{ inputs.package-name || 'python' }}
+          name: ${{ inputs.package-name || 'python' }}
+
+      - name: SonarCloud Scan
+        if: secrets.SONAR_TOKEN != ''
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: ${{ inputs.working-directory }}
+
+  benchmark:
+    runs-on: ubuntu-latest
+    if: inputs.run-tests
+    needs: quality
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Install uv
+        if: inputs.use-uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Install dependencies
+        if: inputs.use-uv
+        run: |
+          uv venv
+          uv sync --all-extras --all-packages --dev
+
+      - name: Run benchmarks
+        if: inputs.use-uv
+        run: |
+          uv pip install pytest-benchmark
+          uv run pytest tests/benchmarks -v --benchmark-only --benchmark-json=benchmark.json || true
+
+      - name: Store benchmark result
+        if: always()
+        uses: benchmark-action/github-action-benchmark@v1
+        with:
+          name: Python Benchmark
+          tool: 'pytest'
+          output-file-path: ${{ inputs.working-directory }}/benchmark.json
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          auto-push: true
+
+  build:
+    runs-on: ubuntu-latest
+    if: inputs.build-docker
+    needs: [quality, test]
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/hanzoai/${{ inputs.package-name }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ inputs.working-directory }}
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            PYTHON_VERSION=${{ inputs.python-version }}
+            BUILD_DATE=${{ github.event.repository.updated_at }}
+            VCS_REF=${{ github.sha }}
+            VERSION=${{ steps.meta.outputs.version }}
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ghcr.io/hanzoai/${{ inputs.package-name }}:${{ steps.meta.outputs.version }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'

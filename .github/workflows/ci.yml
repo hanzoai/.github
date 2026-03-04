@@ -1,0 +1,383 @@
+name: Hanzo Monorepo CI
+
+on:
+  push:
+    branches: [main, develop, staging]
+  pull_request:
+    types: [opened, synchronize, reopened]
+  schedule:
+    - cron: '0 0 * * 0' # Weekly security scan
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/hanzoai
+
+jobs:
+  # Detect which projects have changes
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      python: ${{ steps.filter.outputs.python }}
+      typescript: ${{ steps.filter.outputs.typescript }}
+      rust: ${{ steps.filter.outputs.rust }}
+      go: ${{ steps.filter.outputs.go }}
+      projects: ${{ steps.filter.outputs.changes }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            # Python projects (uv-based)
+            llm:
+              - 'llm/**'
+            agent:
+              - 'agent/**'
+            python-sdk:
+              - 'python-sdk/**'
+            jin:
+              - 'jin/**'
+            az2:
+              - 'az2/**'
+            az2-v1:
+              - 'az2-v1/**'
+            operative:
+              - 'operative/**'
+
+            # TypeScript/Node.js projects
+            chat:
+              - 'chat/**'
+            search:
+              - 'search/**'
+            mcp:
+              - 'mcp/**'
+            flow:
+              - 'flow/**'
+            platform:
+              - 'platform/**'
+            js-sdk:
+              - 'js-sdk/**'
+
+            # Rust projects
+            candle:
+              - 'candle/**'
+            node:
+              - 'node/**'
+            rust-sdk:
+              - 'rust-sdk/**'
+
+            # Go projects
+            go-sdk:
+              - 'go-sdk/**'
+
+            # Aggregate filters
+            python:
+              - 'llm/**'
+              - 'agent/**'
+              - 'python-sdk/**'
+              - 'jin/**'
+              - 'az2/**'
+              - 'az2-v1/**'
+              - 'operative/**'
+            typescript:
+              - 'chat/**'
+              - 'search/**'
+              - 'mcp/**'
+              - 'flow/**'
+              - 'platform/**'
+              - 'js-sdk/**'
+            rust:
+              - 'candle/**'
+              - 'node/**'
+              - 'rust-sdk/**'
+            go:
+              - 'go-sdk/**'
+
+  # Python Projects
+  llm-gateway:
+    needs: detect-changes
+    if: contains(fromJSON(needs.detect-changes.outputs.projects), 'llm')
+    uses: ./.github/workflows/reusable-python.yml
+    with:
+      working-directory: ./llm
+      package-name: llm-gateway
+      python-version: '3.12'
+      use-uv: false  # Uses poetry
+      run-integration-tests: true
+    secrets: inherit
+
+  agent-sdk:
+    needs: detect-changes
+    if: contains(fromJSON(needs.detect-changes.outputs.projects), 'agent')
+    uses: ./.github/workflows/reusable-python.yml
+    with:
+      working-directory: ./agent
+      package-name: agent
+      python-version: '3.12'
+      run-integration-tests: true
+    secrets: inherit
+
+  python-sdk:
+    needs: detect-changes
+    if: contains(fromJSON(needs.detect-changes.outputs.projects), 'python-sdk')
+    uses: ./.github/workflows/reusable-python.yml
+    with:
+      working-directory: ./python-sdk
+      package-name: python-sdk
+      python-version: '3.12'
+      run-integration-tests: true
+    secrets: inherit
+
+  jin:
+    needs: detect-changes
+    if: contains(fromJSON(needs.detect-changes.outputs.projects), 'jin')
+    uses: ./.github/workflows/reusable-python.yml
+    with:
+      working-directory: ./jin
+      package-name: jin
+      python-version: '3.12'
+    secrets: inherit
+
+  az2:
+    needs: detect-changes
+    if: contains(fromJSON(needs.detect-changes.outputs.projects), 'az2')
+    uses: ./.github/workflows/reusable-python.yml
+    with:
+      working-directory: ./az2
+      package-name: az2
+      python-version: '3.12'
+      run-integration-tests: true
+    secrets: inherit
+
+  operative:
+    needs: detect-changes
+    if: contains(fromJSON(needs.detect-changes.outputs.projects), 'operative')
+    uses: ./.github/workflows/reusable-python.yml
+    with:
+      working-directory: ./operative
+      package-name: operative
+      python-version: '3.12'
+    secrets: inherit
+
+  # TypeScript/Node.js Projects
+  chat:
+    needs: detect-changes
+    if: contains(fromJSON(needs.detect-changes.outputs.projects), 'chat')
+    uses: ./.github/workflows/reusable-typescript.yml
+    with:
+      working-directory: ./chat
+      package-name: chat
+      node-version: '20'
+      package-manager: pnpm
+      run-e2e-tests: true
+      is-next: true
+    secrets: inherit
+
+  search:
+    needs: detect-changes
+    if: contains(fromJSON(needs.detect-changes.outputs.projects), 'search')
+    uses: ./.github/workflows/reusable-typescript.yml
+    with:
+      working-directory: ./search
+      package-name: search
+      node-version: '20'
+      package-manager: pnpm
+      run-e2e-tests: true
+      is-next: true
+    secrets: inherit
+
+  mcp:
+    needs: detect-changes
+    if: contains(fromJSON(needs.detect-changes.outputs.projects), 'mcp')
+    uses: ./.github/workflows/reusable-typescript.yml
+    with:
+      working-directory: ./mcp
+      package-name: mcp
+      node-version: '20'
+      package-manager: npm
+    secrets: inherit
+
+  platform:
+    needs: detect-changes
+    if: contains(fromJSON(needs.detect-changes.outputs.projects), 'platform')
+    uses: ./.github/workflows/reusable-typescript.yml
+    with:
+      working-directory: ./platform
+      package-name: platform
+      node-version: '20'
+      package-manager: pnpm
+      is-next: true
+    secrets: inherit
+
+  js-sdk:
+    needs: detect-changes
+    if: contains(fromJSON(needs.detect-changes.outputs.projects), 'js-sdk')
+    uses: ./.github/workflows/reusable-typescript.yml
+    with:
+      working-directory: ./js-sdk
+      package-name: js-sdk
+      node-version: '20'
+      package-manager: pnpm
+    secrets: inherit
+
+  # Rust Projects
+  candle:
+    needs: detect-changes
+    if: contains(fromJSON(needs.detect-changes.outputs.projects), 'candle')
+    uses: ./.github/workflows/reusable-rust.yml
+    with:
+      working-directory: ./candle
+      package-name: candle
+      rust-version: stable
+      features: cuda,mkl
+    secrets: inherit
+
+  node:
+    needs: detect-changes
+    if: contains(fromJSON(needs.detect-changes.outputs.projects), 'node')
+    uses: ./.github/workflows/reusable-rust.yml
+    with:
+      working-directory: ./node
+      package-name: node
+      rust-version: stable
+    secrets: inherit
+
+  rust-sdk:
+    needs: detect-changes
+    if: contains(fromJSON(needs.detect-changes.outputs.projects), 'rust-sdk')
+    uses: ./.github/workflows/reusable-rust.yml
+    with:
+      working-directory: ./rust-sdk
+      package-name: rust-sdk
+      rust-version: stable
+    secrets: inherit
+
+  # Go Projects
+  go-sdk:
+    needs: detect-changes
+    if: contains(fromJSON(needs.detect-changes.outputs.projects), 'go-sdk')
+    uses: ./.github/workflows/reusable-go.yml
+    with:
+      working-directory: ./go-sdk
+      package-name: go-sdk
+      go-version: '1.22'
+      use-luxfi: true
+    secrets: inherit
+
+  # Matrix test for all Python versions
+  python-compatibility:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.python == 'true'
+    strategy:
+      matrix:
+        python-version: ['3.9', '3.10', '3.11', '3.12']
+        project: ['llm', 'agent', 'python-sdk']
+    uses: ./.github/workflows/reusable-python.yml
+    with:
+      working-directory: ./${{ matrix.project }}
+      package-name: ${{ matrix.project }}-py${{ matrix.python-version }}
+      python-version: ${{ matrix.python-version }}
+      build-docker: false
+      deploy: false
+    secrets: inherit
+
+  # Security scanning
+  security-scan:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run Semgrep
+        uses: returntocorp/semgrep-action@v1
+        with:
+          config: auto
+
+      - name: Run CodeQL Analysis
+        uses: github/codeql-action/analyze@v3
+        with:
+          languages: javascript,python,go
+
+      - name: Run Snyk Security Scan
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --all-projects --severity-threshold=high
+
+  # Dependency updates check
+  dependency-check:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check Python dependencies
+        run: |
+          find . -name "pyproject.toml" -exec dirname {} \; | while read dir; do
+            echo "Checking $dir"
+            cd "$dir"
+            if [ -f "uv.lock" ]; then
+              uv pip compile --upgrade pyproject.toml -o requirements-new.txt
+              diff requirements.txt requirements-new.txt || echo "Updates available"
+            fi
+            cd -
+          done
+
+      - name: Check Node.js dependencies
+        run: |
+          npx npm-check-updates --deep --format json > npm-updates.json
+          if [ -s npm-updates.json ]; then
+            echo "Updates available:"
+            cat npm-updates.json
+          fi
+
+  # Summary and notifications
+  summary:
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [
+      llm-gateway, agent-sdk, python-sdk, jin, az2, operative,
+      chat, search, mcp, platform, js-sdk,
+      candle, node, rust-sdk, go-sdk,
+      security-scan
+    ]
+    steps:
+      - name: Generate summary
+        run: |
+          echo "## CI Pipeline Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Build Status" >> $GITHUB_STEP_SUMMARY
+          echo "| Project | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|---------|--------|" >> $GITHUB_STEP_SUMMARY
+
+          # Add status for each job
+          for job in llm-gateway agent-sdk python-sdk jin az2 operative chat search mcp platform js-sdk candle node rust-sdk go-sdk; do
+            status="${{ needs[job].result }}"
+            if [ "$status" = "success" ]; then
+              echo "| $job | ✅ Success |" >> $GITHUB_STEP_SUMMARY
+            elif [ "$status" = "failure" ]; then
+              echo "| $job | ❌ Failed |" >> $GITHUB_STEP_SUMMARY
+            elif [ "$status" = "skipped" ]; then
+              echo "| $job | ⏭️ Skipped |" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "| $job | ⚠️ $status |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Security Scan: ${{ needs.security-scan.result }}" >> $GITHUB_STEP_SUMMARY
+
+      - name: Send Slack notification
+        if: failure() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: 8398a7/action-slack@v3
+        with:
+          status: custom
+          custom_payload: |
+            {
+              attachments: [{
+                color: 'danger',
+                text: `CI Pipeline Failed on main branch\nCommit: ${process.env.AS_COMMIT}\nAuthor: ${process.env.AS_AUTHOR}`,
+              }]
+            }
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}

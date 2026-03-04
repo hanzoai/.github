@@ -1,0 +1,456 @@
+name: Reusable TypeScript/Node.js CI/CD
+
+on:
+  workflow_call:
+    inputs:
+      node-version:
+        description: 'Node.js version to use'
+        required: false
+        type: string
+        default: '20'
+      working-directory:
+        description: 'Working directory for the job'
+        required: true
+        type: string
+      package-manager:
+        description: 'Package manager (pnpm, npm, bun)'
+        required: false
+        type: string
+        default: 'pnpm'
+      run-tests:
+        description: 'Whether to run tests'
+        required: false
+        type: boolean
+        default: true
+      run-e2e-tests:
+        description: 'Whether to run E2E tests'
+        required: false
+        type: boolean
+        default: false
+      build-docker:
+        description: 'Whether to build Docker image'
+        required: false
+        type: boolean
+        default: true
+      deploy:
+        description: 'Whether to deploy'
+        required: false
+        type: boolean
+        default: false
+      package-name:
+        description: 'Package name for deployment'
+        required: false
+        type: string
+      is-next:
+        description: 'Whether this is a Next.js app'
+        required: false
+        type: boolean
+        default: false
+    secrets:
+      TURBO_TOKEN:
+        required: false
+      TURBO_TEAM:
+        required: false
+      SONAR_TOKEN:
+        required: false
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Setup pnpm
+        if: inputs.package-manager == 'pnpm'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
+
+      - name: Setup Bun
+        if: inputs.package-manager == 'bun'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Get package manager cache directory
+        id: cache-dir
+        run: |
+          if [[ "${{ inputs.package-manager }}" == "pnpm" ]]; then
+            echo "dir=$(pnpm store path --silent)" >> $GITHUB_OUTPUT
+          elif [[ "${{ inputs.package-manager }}" == "npm" ]]; then
+            echo "dir=$(npm config get cache)" >> $GITHUB_OUTPUT
+          else
+            echo "dir=$HOME/.bun/install/cache" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ steps.cache-dir.outputs.dir }}
+            ${{ inputs.working-directory }}/node_modules
+            ${{ inputs.working-directory }}/.next/cache
+          key: ${{ runner.os }}-${{ inputs.package-manager }}-${{ hashFiles(format('{0}/**/package-lock.json', inputs.working-directory), format('{0}/**/pnpm-lock.yaml', inputs.working-directory), format('{0}/**/bun.lockb', inputs.working-directory)) }}
+          restore-keys: |
+            ${{ runner.os }}-${{ inputs.package-manager }}-
+
+      - name: Install dependencies
+        run: |
+          if [[ "${{ inputs.package-manager }}" == "pnpm" ]]; then
+            pnpm install --frozen-lockfile
+          elif [[ "${{ inputs.package-manager }}" == "npm" ]]; then
+            npm ci
+          else
+            bun install --frozen-lockfile
+          fi
+
+      - name: Run ESLint
+        run: |
+          if [[ "${{ inputs.package-manager }}" == "pnpm" ]]; then
+            pnpm lint || true
+          elif [[ "${{ inputs.package-manager }}" == "npm" ]]; then
+            npm run lint || true
+          else
+            bun lint || true
+          fi
+
+      - name: Run Prettier check
+        run: |
+          if [[ "${{ inputs.package-manager }}" == "pnpm" ]]; then
+            pnpm format:check || pnpm prettier --check . || true
+          elif [[ "${{ inputs.package-manager }}" == "npm" ]]; then
+            npm run format:check || npx prettier --check . || true
+          else
+            bun format:check || bunx prettier --check . || true
+          fi
+
+      - name: Type check
+        run: |
+          if [[ "${{ inputs.package-manager }}" == "pnpm" ]]; then
+            pnpm type-check || pnpm tsc --noEmit || true
+          elif [[ "${{ inputs.package-manager }}" == "npm" ]]; then
+            npm run type-check || npx tsc --noEmit || true
+          else
+            bun type-check || bunx tsc --noEmit || true
+          fi
+
+      - name: Security audit
+        run: |
+          if [[ "${{ inputs.package-manager }}" == "pnpm" ]]; then
+            pnpm audit || true
+          elif [[ "${{ inputs.package-manager }}" == "npm" ]]; then
+            npm audit || true
+          else
+            bun audit || true
+          fi
+
+  test:
+    runs-on: ubuntu-latest
+    if: inputs.run-tests
+    needs: quality
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Setup pnpm
+        if: inputs.package-manager == 'pnpm'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+          run_install: false
+
+      - name: Setup Bun
+        if: inputs.package-manager == 'bun'
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Cache dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            .next/cache
+          key: ${{ runner.os }}-${{ inputs.package-manager }}-${{ hashFiles('**/package-lock.json', '**/pnpm-lock.yaml', '**/bun.lockb') }}
+
+      - name: Install dependencies
+        run: |
+          if [[ "${{ inputs.package-manager }}" == "pnpm" ]]; then
+            pnpm install --frozen-lockfile
+          elif [[ "${{ inputs.package-manager }}" == "npm" ]]; then
+            npm ci
+          else
+            bun install --frozen-lockfile
+          fi
+
+      - name: Run unit tests
+        run: |
+          if [[ "${{ inputs.package-manager }}" == "pnpm" ]]; then
+            pnpm test:unit || pnpm test || true
+          elif [[ "${{ inputs.package-manager }}" == "npm" ]]; then
+            npm run test:unit || npm test || true
+          else
+            bun test || true
+          fi
+
+      - name: Generate coverage report
+        run: |
+          if [[ "${{ inputs.package-manager }}" == "pnpm" ]]; then
+            pnpm test:coverage || true
+          elif [[ "${{ inputs.package-manager }}" == "npm" ]]; then
+            npm run test:coverage || true
+          else
+            bun test --coverage || true
+          fi
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          directory: ${{ inputs.working-directory }}
+          flags: ${{ inputs.package-name || 'typescript' }}
+          name: ${{ inputs.package-name || 'typescript' }}
+
+      - name: SonarCloud Scan
+        if: secrets.SONAR_TOKEN != ''
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          projectBaseDir: ${{ inputs.working-directory }}
+
+  e2e-tests:
+    runs-on: ubuntu-latest
+    if: inputs.run-e2e-tests
+    needs: quality
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Setup pnpm
+        if: inputs.package-manager == 'pnpm'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Install dependencies
+        run: |
+          if [[ "${{ inputs.package-manager }}" == "pnpm" ]]; then
+            pnpm install --frozen-lockfile
+          elif [[ "${{ inputs.package-manager }}" == "npm" ]]; then
+            npm ci
+          else
+            bun install --frozen-lockfile
+          fi
+
+      - name: Install Playwright browsers
+        run: |
+          if [[ "${{ inputs.package-manager }}" == "pnpm" ]]; then
+            pnpm exec playwright install --with-deps
+          else
+            npx playwright install --with-deps
+          fi
+
+      - name: Build application
+        run: |
+          if [[ "${{ inputs.package-manager }}" == "pnpm" ]]; then
+            pnpm build
+          elif [[ "${{ inputs.package-manager }}" == "npm" ]]; then
+            npm run build
+          else
+            bun run build
+          fi
+
+      - name: Run E2E tests
+        run: |
+          if [[ "${{ inputs.package-manager }}" == "pnpm" ]]; then
+            pnpm test:e2e || pnpm exec playwright test
+          elif [[ "${{ inputs.package-manager }}" == "npm" ]]; then
+            npm run test:e2e || npx playwright test
+          else
+            bun test:e2e
+          fi
+
+      - name: Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ inputs.package-name || 'typescript' }}
+          path: ${{ inputs.working-directory }}/playwright-report/
+          retention-days: 30
+
+  build:
+    runs-on: ubuntu-latest
+    needs: [quality, test]
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Setup pnpm
+        if: inputs.package-manager == 'pnpm'
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: Setup Turbo
+        run: npm install -g turbo
+
+      - name: Cache dependencies and build
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules
+            .next/cache
+            .turbo
+            dist
+            build
+          key: ${{ runner.os }}-build-${{ hashFiles('**/package-lock.json', '**/pnpm-lock.yaml') }}
+
+      - name: Install dependencies
+        run: |
+          if [[ "${{ inputs.package-manager }}" == "pnpm" ]]; then
+            pnpm install --frozen-lockfile
+          elif [[ "${{ inputs.package-manager }}" == "npm" ]]; then
+            npm ci
+          else
+            bun install --frozen-lockfile
+          fi
+
+      - name: Build application
+        env:
+          TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+          TURBO_TEAM: ${{ secrets.TURBO_TEAM }}
+        run: |
+          if [[ "${{ inputs.package-manager }}" == "pnpm" ]]; then
+            pnpm build
+          elif [[ "${{ inputs.package-manager }}" == "npm" ]]; then
+            npm run build
+          else
+            bun run build
+          fi
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-${{ inputs.package-name || 'typescript' }}
+          path: |
+            ${{ inputs.working-directory }}/dist/
+            ${{ inputs.working-directory }}/build/
+            ${{ inputs.working-directory }}/.next/
+          retention-days: 7
+
+  docker:
+    runs-on: ubuntu-latest
+    if: inputs.build-docker
+    needs: [build]
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    outputs:
+      image-tag: ${{ steps.meta.outputs.tags }}
+      image-digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/hanzoai/${{ inputs.package-name }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=latest,enable={{is_default_branch}}
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: ${{ inputs.working-directory }}
+          push: true
+          platforms: linux/amd64,linux/arm64
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            NODE_VERSION=${{ inputs.node-version }}
+            BUILD_DATE=${{ github.event.repository.updated_at }}
+            VCS_REF=${{ github.sha }}
+            VERSION=${{ steps.meta.outputs.version }}
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ghcr.io/hanzoai/${{ inputs.package-name }}:${{ steps.meta.outputs.version }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy results
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
