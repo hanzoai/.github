@@ -1,0 +1,161 @@
+name: Deploy Hanzo Microservices to DigitalOcean App Platform
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'gateway/**'
+      - 'embeddings/**'
+      - 'store-api/**'
+      - 'iam/**'
+      - '.github/workflows/deploy-microservices.yml'
+  workflow_dispatch:
+
+env:
+  DOCTL_VERSION: 1.98.0
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      gateway: ${{ steps.filter.outputs.gateway }}
+      embeddings: ${{ steps.filter.outputs.embeddings }}
+      store-api: ${{ steps.filter.outputs.store-api }}
+      iam: ${{ steps.filter.outputs.iam }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dorny/paths-filter@v2
+      id: filter
+      with:
+        filters: |
+          gateway:
+            - 'gateway/**'
+          embeddings:
+            - 'embeddings/**'
+          store-api:
+            - 'store-api/**'
+          iam:
+            - 'iam/**'
+
+  deploy-gateway:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.gateway == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install doctl
+      uses: digitalocean/action-doctl@v2
+      with:
+        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+    - name: Deploy Gateway to DigitalOcean App Platform
+      run: |
+        cd gateway
+        # Try to update existing app, create if it doesn't exist
+        doctl apps update hanzo-gateway --spec .do/app.yaml --wait || \
+        doctl apps create --spec .do/app.yaml --wait
+
+    - name: Get Gateway URL
+      run: |
+        APP_URL=$(doctl apps list --format Name,DefaultIngress --no-header | grep hanzo-gateway | awk '{print $2}')
+        echo "🚀 Gateway deployed at: https://$APP_URL"
+        echo "Configure DNS: gateway.hanzo.ai CNAME $APP_URL"
+
+  deploy-embeddings:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.embeddings == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install doctl
+      uses: digitalocean/action-doctl@v2
+      with:
+        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+    - name: Deploy Embeddings to DigitalOcean App Platform
+      run: |
+        cd embeddings
+        doctl apps update hanzo-embeddings --spec .do/app.yaml --wait || \
+        doctl apps create --spec .do/app.yaml --wait
+
+    - name: Get Embeddings URL
+      run: |
+        APP_URL=$(doctl apps list --format Name,DefaultIngress --no-header | grep hanzo-embeddings | awk '{print $2}')
+        echo "🧠 Embeddings API deployed at: https://$APP_URL"
+        echo "Configure DNS: embeddings.hanzo.ai CNAME $APP_URL"
+
+  deploy-store-api:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.store-api == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install doctl
+      uses: digitalocean/action-doctl@v2
+      with:
+        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+    - name: Deploy Store API to DigitalOcean App Platform
+      run: |
+        cd store-api
+        doctl apps update hanzo-store-api --spec .do/app.yaml --wait || \
+        doctl apps create --spec .do/app.yaml --wait
+
+    - name: Get Store API URL
+      run: |
+        APP_URL=$(doctl apps list --format Name,DefaultIngress --no-header | grep hanzo-store-api | awk '{print $2}')
+        echo "🏪 Store API deployed at: https://$APP_URL"
+        echo "Configure DNS: store-api.hanzo.ai CNAME $APP_URL"
+
+  deploy-iam:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.iam == 'true'
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install doctl
+      uses: digitalocean/action-doctl@v2
+      with:
+        token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+    - name: Deploy IAM to DigitalOcean App Platform
+      run: |
+        cd iam
+        doctl apps update hanzo-iam --spec .do/app.yaml --wait || \
+        doctl apps create --spec .do/app.yaml --wait
+
+    - name: Get IAM URL
+      run: |
+        APP_URL=$(doctl apps list --format Name,DefaultIngress --no-header | grep hanzo-iam | awk '{print $2}')
+        echo "🔐 Hanzo IAM deployed at: https://$APP_URL"
+        echo "Configure DNS: hanzo.id CNAME $APP_URL"
+
+  notify-deployment:
+    needs: [deploy-gateway, deploy-embeddings, deploy-store-api, deploy-iam]
+    if: always() && (needs.deploy-gateway.result == 'success' || needs.deploy-embeddings.result == 'success' || needs.deploy-store-api.result == 'success' || needs.deploy-iam.result == 'success')
+    runs-on: ubuntu-latest
+    steps:
+    - name: Deployment Summary
+      run: |
+        echo "🎉 Hanzo Microservices Deployment Complete!"
+        echo ""
+        echo "Next steps:"
+        echo "1. Configure Cloudflare DNS records:"
+        echo "   - gateway.hanzo.ai → Gateway App URL"
+        echo "   - embeddings.hanzo.ai → Embeddings App URL"  
+        echo "   - store-api.hanzo.ai → Store API App URL"
+        echo "   - hanzo.id → IAM App URL"
+        echo ""
+        echo "2. Test endpoints:"
+        echo "   curl https://gateway.hanzo.ai/health"
+        echo "   curl https://embeddings.hanzo.ai/health"
+        echo "   curl https://store-api.hanzo.ai/health"
+        echo "   curl https://hanzo.id/health"
