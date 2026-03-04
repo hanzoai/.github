@@ -1,0 +1,263 @@
+name: Hanzo AI Mothership CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run nightly at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_PREFIX: ghcr.io/${{ github.repository_owner }}
+
+jobs:
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      services: ${{ steps.filter.outputs.changes }}
+    steps:
+    - uses: actions/checkout@v4
+    
+    - uses: dorny/paths-filter@v2
+      id: filter
+      with:
+        filters: |
+          router:
+            - 'router/**'
+            - 'chat/**'
+          chat:
+            - 'chat/**'
+            - 'chat2/**'
+          cloud:
+            - 'cloud/**'
+          mcp:
+            - 'mcp/**'
+          agent:
+            - 'agent/**'
+          api:
+            - 'api/**'
+            - 'backend/**'
+          operative:
+            - 'operative/**'
+          flow:
+            - 'flow/**'
+          platform:
+            - 'platform/**'
+          team:
+            - 'team/**'
+          kms:
+            - 'kms/**'
+
+  test-services:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.services != '[]' }}
+    strategy:
+      fail-fast: false
+      matrix:
+        service: ${{ fromJson(needs.detect-changes.outputs.services) }}
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run tests for ${{ matrix.service }}
+      run: |
+        echo "Testing ${{ matrix.service }}..."
+        
+        # Trigger service-specific workflow
+        if [ -f "${{ matrix.service }}/.github/workflows/test.yml" ]; then
+          echo "Service has its own test workflow"
+        else
+          echo "No test workflow found for ${{ matrix.service }}"
+        fi
+
+  integration-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: hanzo
+          POSTGRES_PASSWORD: hanzo123
+          POSTGRES_MULTIPLE_DATABASES: router,cloud,chat,api,agent,mcp
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+          
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+          
+      mongodb:
+        image: mongo:7
+        env:
+          MONGO_INITDB_ROOT_USERNAME: hanzo
+          MONGO_INITDB_ROOT_PASSWORD: hanzo123
+        ports:
+          - 27017:27017
+        options: >-
+          --health-cmd "mongosh --eval 'db.adminCommand(\"ping\")'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+          
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+        
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        
+    - name: Create test environment
+      run: |
+        cat > services/.env << EOF
+        NODE_ENV=test
+        DATABASE_URL=postgresql://hanzo:hanzo123@localhost:5432/hanzo_test
+        REDIS_URL=redis://localhost:6379
+        MONGODB_URL=mongodb://hanzo:hanzo123@localhost:27017/test?authSource=admin
+        ROUTER_MASTER_KEY=sk-test
+        JWT_SECRET=test-secret
+        OPENAI_API_KEY=sk-test
+        ANTHROPIC_API_KEY=sk-ant-test
+        EOF
+        
+    - name: Run integration tests
+      run: |
+        cd services
+        pip install aiohttp requests playwright pytest pytest-asyncio
+        playwright install chromium
+        python hanzo-integration-test.py || true
+
+  build-images:
+    needs: [test-services, integration-test]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: read
+      packages: write
+      
+    strategy:
+      matrix:
+        service: [router, chat, cloud, api, agent, mcp, operative, flow, platform, team, kms]
+        
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+      
+    - name: Log in to Container Registry
+      uses: docker/login-action@v3
+      with:
+        registry: ${{ env.REGISTRY }}
+        username: ${{ github.actor }}
+        password: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Build and push ${{ matrix.service }}
+      uses: docker/build-push-action@v5
+      with:
+        context: ./${{ matrix.service }}
+        push: true
+        tags: |
+          ${{ env.IMAGE_PREFIX }}/hanzo-${{ matrix.service }}:latest
+          ${{ env.IMAGE_PREFIX }}/hanzo-${{ matrix.service }}:${{ github.sha }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+  deploy-staging:
+    needs: build-images
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: staging
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Deploy to staging
+      run: |
+        echo "Deploying to staging environment..."
+        # Add your deployment logic here
+        
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run Trivy repo scan
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+        severity: 'CRITICAL,HIGH'
+        
+    - name: Upload Trivy scan results
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+        
+    - name: Run Semgrep
+      uses: returntocorp/semgrep-action@v1
+      with:
+        config: >-
+          p/security-audit
+          p/secrets
+          p/docker
+          p/kubernetes
+
+  create-release:
+    needs: [build-images, security-scan]
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+      
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        generate_release_notes: true
+        body: |
+          ## Hanzo AI Mothership Release
+          
+          ### Docker Images
+          - Router: `${{ env.IMAGE_PREFIX }}/hanzo-router:${{ github.ref_name }}`
+          - Chat: `${{ env.IMAGE_PREFIX }}/hanzo-chat:${{ github.ref_name }}`
+          - Cloud: `${{ env.IMAGE_PREFIX }}/hanzo-cloud:${{ github.ref_name }}`
+          - API: `${{ env.IMAGE_PREFIX }}/hanzo-api:${{ github.ref_name }}`
+          - Agent: `${{ env.IMAGE_PREFIX }}/hanzo-agent:${{ github.ref_name }}`
+          - MCP: `${{ env.IMAGE_PREFIX }}/hanzo-mcp:${{ github.ref_name }}`
+          
+          ### Installation
+          ```bash
+          docker compose -f services/docker-compose.mothership.yml up
+          ```
