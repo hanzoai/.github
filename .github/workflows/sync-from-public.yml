@@ -1,0 +1,73 @@
+name: Sync from Public Stack
+
+on:
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to sync from public stack'
+        required: false
+        default: 'main'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout universe
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Add public remote
+        run: |
+          git remote add public https://github.com/hanzoai/stack.git || true
+          git fetch public
+
+      - name: Create sync branch
+        run: |
+          git checkout -b sync/public-stack-$(date +%Y%m%d-%H%M%S)
+
+      - name: Merge public changes
+        run: |
+          # Merge public changes, keeping our production configs
+          git merge public/${{ github.event.inputs.branch || 'main' }} \
+            --no-commit \
+            --allow-unrelated-histories || true
+
+          # Preserve our private files
+          git checkout HEAD -- secrets/
+          git checkout HEAD -- .env.production
+          git checkout HEAD -- compose.production.yml
+          git checkout HEAD -- infrastructure/
+
+          # Commit if there are changes
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: sync with public stack $(date +%Y-%m-%d)"
+          fi
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: sync/public-stack-${{ github.run_id }}
+          title: 'Sync: Updates from public stack'
+          body: |
+            ## Automated sync from public stack
+
+            This PR contains updates from the public [hanzoai/stack](https://github.com/hanzoai/stack) repository.
+
+            ### Review checklist
+            - [ ] No secrets or private data exposed
+            - [ ] Production configs preserved
+            - [ ] Tests passing
+            - [ ] Breaking changes documented
+
+            ### Changes included
+            See commits for detailed changes.
+          labels: |
+            sync
+            automated
+            needs-review
