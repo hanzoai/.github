@@ -1,0 +1,145 @@
+name: E2E Tests (Reusable)
+
+# Reusable Playwright E2E test workflow.
+# Runs Playwright tests against a running service URL.
+#
+# Usage:
+#   jobs:
+#     e2e:
+#       uses: hanzoai/.github/.github/workflows/reusable-e2e.yml@main
+#       with:
+#         service-dir: client
+#         base-url: http://localhost:3080
+#         node-version: '20'
+
+on:
+  workflow_call:
+    inputs:
+      service-dir:
+        description: "Directory containing package.json with Playwright"
+        required: true
+        type: string
+      base-url:
+        description: "Base URL for Playwright tests"
+        default: "http://localhost:3000"
+        type: string
+      config-file:
+        description: "Playwright config file (relative to service-dir)"
+        default: ""
+        type: string
+      test-command:
+        description: "NPM script to run E2E tests"
+        default: "e2e:ci"
+        type: string
+      node-version:
+        description: "Node.js version"
+        default: "20"
+        type: string
+      pnpm-version:
+        description: "pnpm version (empty = use npm)"
+        default: ""
+        type: string
+      install-command:
+        description: "Install command (overrides auto-detect)"
+        default: ""
+        type: string
+      build-command:
+        description: "Build command to run before tests"
+        default: ""
+        type: string
+      start-command:
+        description: "Start command for the dev server (if not using webServer in config)"
+        default: ""
+        type: string
+      runner:
+        description: "Runner label"
+        default: "ubuntu-latest"
+        type: string
+      timeout-minutes:
+        description: "Job timeout"
+        default: 30
+        type: number
+      upload-report:
+        description: "Upload Playwright HTML report as artifact"
+        default: true
+        type: boolean
+    outputs:
+      result:
+        description: "Test result (success/failure)"
+        value: ${{ jobs.e2e.outputs.result }}
+
+jobs:
+  e2e:
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: ${{ inputs.timeout-minutes }}
+    outputs:
+      result: ${{ steps.test.outcome }}
+    env:
+      CI: true
+      NODE_ENV: CI
+      BASE_URL: ${{ inputs.base-url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - name: Setup pnpm
+        if: inputs.pnpm-version != ''
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ inputs.pnpm-version }}
+
+      - name: Install dependencies
+        working-directory: ${{ inputs.service-dir }}
+        run: |
+          if [ -n "${{ inputs.install-command }}" ]; then
+            ${{ inputs.install-command }}
+          elif [ -n "${{ inputs.pnpm-version }}" ]; then
+            pnpm install --frozen-lockfile
+          elif [ -f "package-lock.json" ]; then
+            npm ci
+          else
+            npm install
+          fi
+
+      - name: Install Playwright browsers
+        working-directory: ${{ inputs.service-dir }}
+        run: npx playwright install --with-deps chromium
+
+      - name: Build
+        if: inputs.build-command != ''
+        working-directory: ${{ inputs.service-dir }}
+        run: ${{ inputs.build-command }}
+
+      - name: Start server
+        if: inputs.start-command != ''
+        working-directory: ${{ inputs.service-dir }}
+        run: |
+          ${{ inputs.start-command }} &
+          # Wait for server to be ready
+          npx wait-on ${{ inputs.base-url }} --timeout 60000 || true
+
+      - name: Run E2E tests
+        id: test
+        working-directory: ${{ inputs.service-dir }}
+        run: |
+          if [ -n "${{ inputs.config-file }}" ]; then
+            npx playwright test --config=${{ inputs.config-file }}
+          else
+            npm run ${{ inputs.test-command }}
+          fi
+        env:
+          PLAYWRIGHT_BASE_URL: ${{ inputs.base-url }}
+
+      - name: Upload Playwright report
+        if: always() && inputs.upload-report
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-${{ github.job }}
+          path: |
+            ${{ inputs.service-dir }}/playwright-report/
+            ${{ inputs.service-dir }}/**/playwright-report/
+          retention-days: 14
