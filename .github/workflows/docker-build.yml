@@ -320,7 +320,7 @@ jobs:
       always() &&
       (needs.create-manifest.result == 'success' || needs.tag-single-arch.result == 'success') &&
       !(needs.create-manifest.result == 'failure' || needs.tag-single-arch.result == 'failure') &&
-      inputs.deploy && github.ref == 'refs/heads/main'
+      inputs.deploy && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
     runs-on: ${{ inputs.runner-deploy }}
     needs: [create-manifest, tag-single-arch]
     environment: production
