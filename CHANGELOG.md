@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.0.2 (2026-03-11)
+
+No conventional commits found
+
+# Changelog
+
 ## v0.0.1 (2026-03-10)
 
 - feat: add CI/CD workflows for deploy, release, and reusable pipelines (a96a092)
