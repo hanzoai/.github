@@ -58,11 +58,11 @@ on:
         type: string
       runner-build:
         description: "Runner for build jobs"
-        default: "hanzo-build"
+        default: "hanzo-build-linux-amd64"
         type: string
       runner-deploy:
         description: "Runner for deploy jobs (needs kubectl)"
-        default: "hanzo-k8s"
+        default: "hanzo-deploy-linux-amd64"
         type: string
       e2e-enabled:
         description: "Run E2E smoke tests after deploy"
