@@ -75,15 +75,15 @@ on:
         type: string
       runner-amd64:
         description: "Runner label for amd64 builds"
-        default: "hanzo-build"
+        default: "hanzo-build-linux-amd64"
         type: string
       runner-arm64:
         description: "Runner label for arm64 builds"
-        default: "hanzo-build-arm64"
+        default: "hanzo-build-linux-arm64"
         type: string
       runner-deploy:
         description: "Runner label for deploy jobs"
-        default: "hanzo-k8s"
+        default: "hanzo-deploy-linux-amd64"
         type: string
 
     outputs:
