@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.0.5 (2026-03-31)
+
+- fix: use GITHUB_TOKEN for GHCR login instead of GH_PAT (6b21eb7)
+
+# Changelog
+
 ## v0.0.4 (2026-03-30)
 
 No conventional commits found
