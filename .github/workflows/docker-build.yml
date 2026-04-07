@@ -149,8 +149,8 @@ jobs:
           target: ${{ inputs.target || '' }}
           labels: ${{ steps.meta.outputs.labels }}
           tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=registry,ref=${{ inputs.cache-key || inputs.image }}-cache:amd64
-          cache-to: type=registry,ref=${{ inputs.cache-key || inputs.image }}-cache:amd64,mode=max
+          cache-from: type=gha,scope=${{ inputs.image }}-amd64
+          cache-to: type=gha,scope=${{ inputs.image }}-amd64,mode=max
           provenance: false
           push: ${{ inputs.push }}
 
@@ -202,8 +202,8 @@ jobs:
           target: ${{ inputs.target || '' }}
           labels: ${{ steps.meta.outputs.labels }}
           tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=registry,ref=${{ inputs.cache-key || inputs.image }}-cache:arm64
-          cache-to: type=registry,ref=${{ inputs.cache-key || inputs.image }}-cache:arm64,mode=max
+          cache-from: type=gha,scope=${{ inputs.image }}-arm64
+          cache-to: type=gha,scope=${{ inputs.image }}-arm64,mode=max
           provenance: false
           push: ${{ inputs.push }}
 
