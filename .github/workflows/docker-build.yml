@@ -1,7 +1,7 @@
 name: Docker Build & Push (Reusable)
 
 # Reusable workflow for native multi-arch Docker builds.
-# No QEMU — native amd64 + arm64 runners.
+# No QEMU — native amd64 (self-hosted ARC) + arm64 (GitHub-hosted ARM) runners.
 #
 # Changes:
 #   - REMOVED CACHE_BUST=${{ github.sha }} (was invalidating all layer caching)
@@ -78,8 +78,8 @@ on:
         default: "hanzo-build-linux-amd64"
         type: string
       runner-arm64:
-        description: "Runner label for arm64 builds"
-        default: "hanzo-build-linux-arm64"
+        description: "Runner label for arm64 builds (native GitHub-hosted ARM64)"
+        default: "ubuntu-24.04-arm"
         type: string
       runner-deploy:
         description: "Runner label for deploy jobs"
@@ -154,7 +154,7 @@ jobs:
           provenance: false
           push: ${{ inputs.push }}
 
-  # ── arm64 (native Graviton on AWS EC2) ───────────────────────
+  # ── arm64 (GitHub-hosted ubuntu-24.04-arm — native Ampere) ───
   build-arm64:
     if: contains(inputs.platforms, 'linux/arm64')
     runs-on: ${{ inputs.runner-arm64 }}
