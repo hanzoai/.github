@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.0.8 (2026-04-07)
+
+- docs: org profile with ecosystem cross-links (c15ddde)
+
+# Changelog
+
 ## v0.0.7 (2026-04-07)
 
 - fix: use GHA cache instead of registry cache (403 on cross-repo) (5fc61b1)
