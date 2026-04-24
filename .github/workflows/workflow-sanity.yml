@@ -1,0 +1,194 @@
+name: Workflow Sanity (Reusable)
+
+# Enforces the canonical CI contract across every repo in the
+# hanzo / lux / zoo / liquidity orgs:
+#
+#   1. No GitHub-hosted runners — ARC only (hanzo-build-linux-*, hanzo-deploy-linux-*)
+#   2. No bespoke `docker/build-push-action` outside this repo — callers
+#      must use hanzoai/.github/.github/workflows/docker-build.yml@main
+#   3. No Docker-build workflow that doesn't reference the canonical reusable
+#   4. No stale runner labels (lux-build-*, lqd-build-*, old aliases)
+#   5. actionlint clean
+#   6. No tabs in workflow files
+#
+# Usage in every repo — a 9-line `.github/workflows/workflow-sanity.yml`:
+#
+#   name: Workflow Sanity
+#   on:
+#     pull_request:
+#     push:
+#       branches: [main]
+#   jobs:
+#     sanity:
+#       uses: hanzoai/.github/.github/workflows/workflow-sanity.yml@main
+
+on:
+  workflow_call:
+
+jobs:
+  no-tabs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fail on tabs in workflow files
+        run: |
+          python3 - <<'PY'
+          from __future__ import annotations
+          import pathlib, sys
+          root = pathlib.Path(".github/workflows")
+          bad: list[str] = []
+          for pattern in ("*.yml", "*.yaml"):
+            for path in sorted(root.rglob(pattern)):
+              if b"\t" in path.read_bytes():
+                bad.append(str(path))
+          if bad:
+            print("Tabs found in workflow file(s):")
+            for p in bad: print(f"- {p}")
+            sys.exit(1)
+          PY
+
+  no-github-hosted-runners:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fail on ubuntu/macos/windows runners
+        run: |
+          python3 - <<'PY'
+          from __future__ import annotations
+          import pathlib, re, sys
+          # ubuntu-* / macos-* / windows-* at any `runs-on:` — except ubuntu-latest
+          # is tolerated in this sanity workflow itself since the reusable runs on
+          # GitHub-hosted by design (sanity checks have no ARC requirement).
+          # Check CALLER repos only — skip the reusable sanity file itself.
+          SELF = "workflow-sanity.yml"
+          pat = re.compile(r"^\s*runs-on:\s*['\"]?(ubuntu-[0-9a-z\.\-]+|macos-[0-9a-z\.\-]+|windows-[0-9a-z\.\-]+)['\"]?\s*$", re.M)
+          root = pathlib.Path(".github/workflows")
+          bad: list[str] = []
+          for pattern in ("*.yml", "*.yaml"):
+            for path in sorted(root.rglob(pattern)):
+              if path.name == SELF: continue
+              text = path.read_text()
+              for m in pat.finditer(text):
+                # tolerate 'runs-on: ubuntu-latest' inside workflow-sanity-ish jobs
+                bad.append(f"{path}: {m.group(0).strip()}")
+          if bad:
+            print("GitHub-hosted runners found (ARC only — use hanzo-build-linux-amd64 / hanzo-build-linux-arm64 / hanzo-deploy-linux-amd64):")
+            for line in bad: print(f"- {line}")
+            sys.exit(1)
+          PY
+
+  no-stale-runner-labels:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fail on old runner labels
+        run: |
+          python3 - <<'PY'
+          from __future__ import annotations
+          import pathlib, re, sys
+          # Pre-consolidation labels that are no longer provisioned.
+          stale = re.compile(r"\b(lux-build-[a-z0-9-]+|lux-deploy-[a-z0-9-]+|lqd-build-[a-z0-9-]+|lqd-deploy-[a-z0-9-]+)\b")
+          root = pathlib.Path(".github/workflows")
+          bad: list[str] = []
+          for pattern in ("*.yml", "*.yaml"):
+            for path in sorted(root.rglob(pattern)):
+              for n, line in enumerate(path.read_text().splitlines(), 1):
+                if stale.search(line):
+                  bad.append(f"{path}:{n}: {line.strip()}")
+          if bad:
+            print("Stale runner labels found (use hanzo-build-linux-{amd64,arm64} / hanzo-deploy-linux-amd64):")
+            for line in bad: print(f"- {line}")
+            sys.exit(1)
+          PY
+
+  no-bespoke-docker-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fail on docker/build-push-action outside hanzoai/.github
+        env:
+          REPO_FULL: ${{ github.repository }}
+        run: |
+          python3 - <<'PY'
+          from __future__ import annotations
+          import os, pathlib, re, sys
+          repo_full = os.environ["REPO_FULL"]
+          # The reusable itself is allowed to use docker/build-push-action.
+          if repo_full == "hanzoai/.github":
+            sys.exit(0)
+          pat = re.compile(r"docker/build-push-action")
+          root = pathlib.Path(".github/workflows")
+          bad: list[str] = []
+          for pattern in ("*.yml", "*.yaml"):
+            for path in sorted(root.rglob(pattern)):
+              for n, line in enumerate(path.read_text().splitlines(), 1):
+                if pat.search(line):
+                  bad.append(f"{path}:{n}: {line.strip()}")
+          if bad:
+            print("Bespoke docker/build-push-action found (use hanzoai/.github/.github/workflows/docker-build.yml@main):")
+            for line in bad: print(f"- {line}")
+            sys.exit(1)
+          PY
+
+  docker-workflow-uses-canonical:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Fail if a Docker-build workflow doesn't reference the canonical reusable
+        env:
+          REPO_FULL: ${{ github.repository }}
+        run: |
+          python3 - <<'PY'
+          from __future__ import annotations
+          import os, pathlib, re, sys
+          repo_full = os.environ["REPO_FULL"]
+          if repo_full == "hanzoai/.github":
+            sys.exit(0)
+          # A workflow is a "Docker-build workflow" if it references:
+          #   - docker buildx
+          #   - docker/build-push-action
+          #   - image push to ghcr.io / us-docker.pkg.dev
+          # Any such workflow MUST reference the canonical reusable.
+          indicators = re.compile(
+            r"(docker\s+buildx\s+build|docker/build-push-action|"
+            r"ghcr\.io/[a-z0-9._/-]+|us-docker\.pkg\.dev/[a-z0-9._/-]+)"
+          )
+          canonical = re.compile(r"hanzoai/\.github/\.github/workflows/docker-build\.yml@")
+          root = pathlib.Path(".github/workflows")
+          bad: list[str] = []
+          for pattern in ("*.yml", "*.yaml"):
+            for path in sorted(root.rglob(pattern)):
+              text = path.read_text()
+              if indicators.search(text) and not canonical.search(text):
+                bad.append(str(path))
+          if bad:
+            print("Docker-building workflow(s) NOT using canonical reusable (hanzoai/.github/.github/workflows/docker-build.yml@main):")
+            for p in bad: print(f"- {p}")
+            sys.exit(1)
+          PY
+
+  actionlint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install actionlint
+        shell: bash
+        run: |
+          set -euo pipefail
+          ACTIONLINT_VERSION="1.7.11"
+          archive="actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz"
+          base_url="https://github.com/rhysd/actionlint/releases/download/v${ACTIONLINT_VERSION}"
+          curl -sSfL -o "${archive}" "${base_url}/${archive}"
+          curl -sSfL -o checksums.txt "${base_url}/actionlint_${ACTIONLINT_VERSION}_checksums.txt"
+          grep " ${archive}\$" checksums.txt | sha256sum -c -
+          tar -xzf "${archive}" actionlint
+          sudo install -m 0755 actionlint /usr/local/bin/actionlint
+
+      - name: Lint workflows
+        run: actionlint -shellcheck=
