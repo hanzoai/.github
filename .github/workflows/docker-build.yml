@@ -1,13 +1,13 @@
 name: Docker Build & Push (Reusable)
 
 # Reusable workflow for native multi-arch Docker builds.
-# No QEMU — native amd64 (self-hosted ARC) + arm64 (GitHub-hosted ARM) runners.
+# Native amd64 + arm64 ARC runners only — NO GitHub-hosted runners, period.
+#   runner-amd64: hanzo-build-linux-amd64 (DO ARC, max 30)
+#   runner-arm64: hanzo-build-linux-arm64 (GKE T2A Ampere ARC, max 30)
+#   runner-deploy: hanzo-deploy-linux-amd64 (DO ARC, max 20)
 #
-# Changes:
-#   - REMOVED CACHE_BUST=${{ github.sha }} (was invalidating all layer caching)
-#   - Normalized arm64 Buildx driver to match amd64 (docker-container + network=host)
-#   - Fixed single-arch deploy path (tag-single-arch job)
-#   - Deploy job uses always() to handle both multi-arch and single-arch paths
+# Callers may override via `with:` but MUST use ARC labels. Consult org ops
+# if additional runner capacity is needed.
 #
 # Usage in any repo:
 #
@@ -78,8 +78,8 @@ on:
         default: "hanzo-build-linux-amd64"
         type: string
       runner-arm64:
-        description: "Runner label for arm64 builds (native GitHub-hosted ARM64)"
-        default: "ubuntu-24.04-arm"
+        description: "Runner label for arm64 builds (ARC, GKE T2A Ampere)"
+        default: "hanzo-build-linux-arm64"
         type: string
       runner-deploy:
         description: "Runner label for deploy jobs"
@@ -154,7 +154,7 @@ jobs:
           provenance: false
           push: ${{ inputs.push }}
 
-  # ── arm64 (GitHub-hosted ubuntu-24.04-arm — native Ampere) ───
+  # ── arm64 (ARC — GKE T2A Ampere native, hanzo-build-linux-arm64) ───
   build-arm64:
     if: contains(inputs.platforms, 'linux/arm64')
     runs-on: ${{ inputs.runner-arm64 }}
