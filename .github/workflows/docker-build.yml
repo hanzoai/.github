@@ -9,7 +9,35 @@ name: Docker Build & Push (Reusable)
 # Callers may override via `with:` but MUST use ARC labels. Consult org ops
 # if additional runner capacity is needed.
 #
-# Usage in any repo:
+# ─── Registry support ────────────────────────────────────────────────
+# registry=ghcr.io  (default) → GITHUB_TOKEN login for hanzoai/luxfi/zooai
+# registry=us-docker.pkg.dev   → GCP SA JSON in secrets.GCP_CREDENTIAL for liquidityio
+#                               (org secret on liquidityio org; pass secrets: inherit)
+#
+# ─── Multi-image repos ───────────────────────────────────────────────
+# Callers with more than one image fan-out via their own matrix:
+#
+#   jobs:
+#     docker:
+#       strategy:
+#         matrix:
+#           include:
+#             - image: ghcr.io/hanzoai/chat-api
+#               dockerfile: Dockerfile.api
+#             - image: ghcr.io/hanzoai/chat-web
+#               dockerfile: Dockerfile.web
+#       uses: hanzoai/.github/.github/workflows/docker-build.yml@main
+#       with:
+#         image: ${{ matrix.image }}
+#         dockerfile: ${{ matrix.dockerfile }}
+#       secrets: inherit
+#
+# ─── Pre-build steps ─────────────────────────────────────────────────
+# For repos that must compile a binary before the Dockerfile COPYs it
+# (e.g. hanzo/dns), pass `pre-build-command` — it runs on each arch
+# runner before `docker buildx build`.
+#
+# Usage — simple single-image GHCR:
 #
 #   jobs:
 #     docker:
@@ -22,8 +50,12 @@ on:
   workflow_call:
     inputs:
       image:
-        description: "Full image name (e.g. ghcr.io/hanzoai/bot)"
+        description: "Full image name (e.g. ghcr.io/hanzoai/bot, us-docker.pkg.dev/liquidity-registry/liquidityio/mpc)"
         required: true
+        type: string
+      registry:
+        description: "Container registry (ghcr.io or us-docker.pkg.dev)"
+        default: "ghcr.io"
         type: string
       context:
         description: "Docker build context"
@@ -49,6 +81,10 @@ on:
         description: "Push images to registry"
         default: true
         type: boolean
+      pre-build-command:
+        description: "Shell command to run before docker buildx build (e.g. 'go build -o dns-server ./cmd/dns')"
+        default: ""
+        type: string
       deploy:
         description: "Deploy after build (kubectl rollout restart)"
         default: false
@@ -97,9 +133,6 @@ on:
         description: "Final manifest tags (JSON)"
         value: ${{ jobs.create-manifest.outputs.tags }}
 
-env:
-  REGISTRY: ghcr.io
-
 jobs:
   # ── amd64 (ARC runner on hanzo-k8s) ──────────────────────────
   build-amd64:
@@ -108,6 +141,7 @@ jobs:
     permissions:
       packages: write
       contents: read
+      id-token: write
     outputs:
       digest: ${{ steps.build.outputs.digest }}
     steps:
@@ -122,11 +156,25 @@ jobs:
             network=host
 
       - name: Login to GHCR
+        if: inputs.registry == 'ghcr.io'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to GAR
+        if: inputs.registry == 'us-docker.pkg.dev'
+        uses: docker/login-action@v3
+        with:
+          registry: us-docker.pkg.dev
+          username: _json_key
+          password: ${{ secrets.GCP_CREDENTIAL }}
+
+      - name: Pre-build command
+        if: inputs.pre-build-command != ''
+        working-directory: ${{ inputs.context }}
+        run: ${{ inputs.pre-build-command }}
 
       - name: Extract metadata
         id: meta
@@ -161,6 +209,7 @@ jobs:
     permissions:
       packages: write
       contents: read
+      id-token: write
     outputs:
       digest: ${{ steps.build.outputs.digest }}
     steps:
@@ -175,11 +224,25 @@ jobs:
             network=host
 
       - name: Login to GHCR
+        if: inputs.registry == 'ghcr.io'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to GAR
+        if: inputs.registry == 'us-docker.pkg.dev'
+        uses: docker/login-action@v3
+        with:
+          registry: us-docker.pkg.dev
+          username: _json_key
+          password: ${{ secrets.GCP_CREDENTIAL }}
+
+      - name: Pre-build command
+        if: inputs.pre-build-command != ''
+        working-directory: ${{ inputs.context }}
+        run: ${{ inputs.pre-build-command }}
 
       - name: Extract metadata
         id: meta
@@ -215,15 +278,25 @@ jobs:
     permissions:
       packages: write
       contents: read
+      id-token: write
     outputs:
       tags: ${{ steps.meta.outputs.json }}
     steps:
       - name: Login to GHCR
+        if: inputs.registry == 'ghcr.io'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to GAR
+        if: inputs.registry == 'us-docker.pkg.dev'
+        uses: docker/login-action@v3
+        with:
+          registry: us-docker.pkg.dev
+          username: _json_key
+          password: ${{ secrets.GCP_CREDENTIAL }}
 
       - name: Extract metadata
         id: meta
@@ -274,13 +347,23 @@ jobs:
     permissions:
       packages: write
       contents: read
+      id-token: write
     steps:
       - name: Login to GHCR
+        if: inputs.registry == 'ghcr.io'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to GAR
+        if: inputs.registry == 'us-docker.pkg.dev'
+        uses: docker/login-action@v3
+        with:
+          registry: us-docker.pkg.dev
+          username: _json_key
+          password: ${{ secrets.GCP_CREDENTIAL }}
 
       - name: Extract metadata
         id: meta
