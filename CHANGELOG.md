@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.0.9 (2026-04-24)
+
+No conventional commits found
+
+# Changelog
+
 ## v0.0.8 (2026-04-07)
 
 - docs: org profile with ecosystem cross-links (c15ddde)
