@@ -149,14 +149,15 @@ jobs:
           repo_full = os.environ["REPO_FULL"]
           if repo_full == "hanzoai/.github":
             sys.exit(0)
-          # A workflow is a "Docker-build workflow" if it references:
-          #   - docker buildx
-          #   - docker/build-push-action
-          #   - image push to ghcr.io / us-docker.pkg.dev
+          # A workflow is a "Docker-build workflow" if it actually builds:
+          #   - invokes docker/build-push-action
+          #   - runs `docker buildx build` in a shell step
+          #   - runs `docker buildx imagetools create` (manifest stitching)
           # Any such workflow MUST reference the canonical reusable.
+          # Pulling or running prebuilt images in a workflow doesn't count.
           indicators = re.compile(
-            r"(docker\s+buildx\s+build|docker/build-push-action|"
-            r"ghcr\.io/[a-z0-9._/-]+|us-docker\.pkg\.dev/[a-z0-9._/-]+)"
+            r"(docker/build-push-action|docker\s+buildx\s+build|"
+            r"docker\s+buildx\s+imagetools\s+create)"
           )
           canonical = re.compile(r"hanzoai/\.github/\.github/workflows/docker-build\.yml@")
           root = pathlib.Path(".github/workflows")
