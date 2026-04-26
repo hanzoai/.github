@@ -133,19 +133,6 @@ on:
         description: "Final manifest tags (JSON)"
         value: ${{ jobs.create-manifest.outputs.tags }}
 
-    # Secrets must be declared explicitly so callers in OTHER orgs
-    # can pass them. `secrets: inherit` only flows secrets when caller
-    # and reusable share the same org/enterprise. Without this block,
-    # a cross-org caller (e.g. liquidityio/* calling this hanzoai/.github
-    # reusable) would have ${{ secrets.GCP_CREDENTIAL }} resolve to an
-    # empty string, causing the GAR login step to fail with
-    # "Password required" — observed on every liquidityio Release run
-    # since the cefa85a0 migration to this canonical reusable.
-    secrets:
-      GCP_CREDENTIAL:
-        description: "GCP service-account JSON for Artifact Registry pushes (only required when registry=us-docker.pkg.dev)"
-        required: false
-
 jobs:
   # ── amd64 (ARC runner on hanzo-k8s) ──────────────────────────
   build-amd64:
