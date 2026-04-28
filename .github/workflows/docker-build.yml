@@ -1,10 +1,16 @@
 name: Docker Build & Push (Reusable)
 
-# Reusable workflow for native multi-arch Docker builds.
-# Native amd64 + arm64 ARC runners only — NO GitHub-hosted runners, period.
+# Reusable workflow for native Docker builds.
+# Native amd64 ARC runners only — NO GitHub-hosted runners, period.
 #   runner-amd64: hanzo-build-linux-amd64 (DO ARC, max 30)
-#   runner-arm64: hanzo-build-linux-arm64 (GKE T2A Ampere ARC, max 30)
 #   runner-deploy: hanzo-deploy-linux-amd64 (DO ARC, max 20)
+#
+# arm64 paused (2026-04-27): DOKS has no arm64 droplets (DigitalOcean
+# catalog is amd64 Intel/AMD only — 133 sizes inspected). The
+# `hanzo-build-linux-arm64` Helm release was uninstalled. Callers should
+# leave `platforms` at the default (`linux/amd64`); when DO ships arm64
+# droplets, switch the default back to `linux/amd64,linux/arm64` and
+# reinstall the arm64 ARC scale set on hanzo-k8s.
 #
 # Callers may override via `with:` but MUST use ARC labels. Consult org ops
 # if additional runner capacity is needed.
@@ -74,8 +80,8 @@ on:
         default: ""
         type: string
       platforms:
-        description: "Comma-separated platforms to build"
-        default: "linux/amd64,linux/arm64"
+        description: "Comma-separated platforms to build (arm64 paused — DOKS has no arm64 droplets; default is amd64-only)"
+        default: "linux/amd64"
         type: string
       push:
         description: "Push images to registry"
@@ -114,7 +120,7 @@ on:
         default: "hanzo-build-linux-amd64"
         type: string
       runner-arm64:
-        description: "Runner label for arm64 builds (ARC, GKE T2A Ampere)"
+        description: "Runner label for arm64 builds (paused — DOKS has no arm64 droplets; preserved so callers can re-enable when DO ships arm64)"
         default: "hanzo-build-linux-arm64"
         type: string
       runner-deploy:
