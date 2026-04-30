@@ -1,13 +1,19 @@
 name: Docker Build & Push (Reusable)
 
 # Reusable workflow for native multi-arch Docker builds.
-# Native amd64 + arm64 ARC runners only — NO GitHub-hosted runners, period.
-#   runner-amd64: hanzo-build-linux-amd64 (DO ARC, max 30)
-#   runner-arm64: hanzo-build-linux-arm64 (GKE T2A Ampere ARC, max 30)
-#   runner-deploy: hanzo-deploy-linux-amd64 (DO ARC, max 20)
 #
-# Callers may override via `with:` but MUST use ARC labels. Consult org ops
-# if additional runner capacity is needed.
+# Default runners are GitHub-hosted (universally reachable from any org):
+#   runner-amd64: ubuntu-latest        (GitHub-hosted x64)
+#   runner-arm64: ubuntu-24.04-arm     (GitHub-hosted Ampere)
+#   runner-deploy: ubuntu-latest       (GitHub-hosted x64)
+#
+# Callers inside the hanzoai org may override to ARC scale-sets when
+# the runner-group is online and labelled correctly:
+#   runner-amd64: hanzo-build-linux-amd64
+#   runner-arm64: hanzo-build-linux-arm64
+#   runner-deploy: hanzo-deploy-linux-amd64
+# Note: ARC runners are not visible from cross-org callers (luxfi/zooai/etc),
+# so leaving the GitHub-hosted defaults is the only correct choice for them.
 #
 # ─── Registry support ────────────────────────────────────────────────
 # registry=ghcr.io  (default) → GITHUB_TOKEN login for hanzoai/luxfi/zooai
@@ -110,16 +116,16 @@ on:
         default: ""
         type: string
       runner-amd64:
-        description: "Runner label for amd64 builds"
-        default: "hanzo-build-linux-amd64"
+        description: "Runner label for amd64 builds (default: GitHub-hosted ubuntu-latest)"
+        default: "ubuntu-latest"
         type: string
       runner-arm64:
-        description: "Runner label for arm64 builds (ARC, GKE T2A Ampere)"
-        default: "hanzo-build-linux-arm64"
+        description: "Runner label for arm64 builds (default: GitHub-hosted ubuntu-24.04-arm)"
+        default: "ubuntu-24.04-arm"
         type: string
       runner-deploy:
-        description: "Runner label for deploy jobs"
-        default: "hanzo-deploy-linux-amd64"
+        description: "Runner label for deploy jobs (default: GitHub-hosted ubuntu-latest)"
+        default: "ubuntu-latest"
         type: string
 
     outputs:
