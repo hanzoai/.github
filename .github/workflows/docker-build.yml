@@ -198,9 +198,12 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ inputs.image }}
+          # Semver-only policy: NEVER push :latest, :main, or other floating tags.
+          # Branch builds get a SHA-prefixed immutable tag; PR builds keep their
+          # ephemeral pr-N tag for review apps. Anything else is rejected.
           tags: |
             type=semver,pattern={{version}},suffix=-amd64${{ inputs.tag-suffix }}
-            type=ref,event=branch,suffix=-amd64${{ inputs.tag-suffix }}
+            type=sha,prefix=sha-,suffix=-amd64${{ inputs.tag-suffix }}
             type=ref,event=pr,suffix=-amd64${{ inputs.tag-suffix }}
 
       - name: Build and push
@@ -266,9 +269,10 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ inputs.image }}
+          # Semver-only policy — see build-amd64 metadata step.
           tags: |
             type=semver,pattern={{version}},suffix=-arm64${{ inputs.tag-suffix }}
-            type=ref,event=branch,suffix=-arm64${{ inputs.tag-suffix }}
+            type=sha,prefix=sha-,suffix=-arm64${{ inputs.tag-suffix }}
             type=ref,event=pr,suffix=-arm64${{ inputs.tag-suffix }}
 
       - name: Build and push
@@ -320,11 +324,13 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ inputs.image }}
+          # Semver-only policy: only v* tags produce a canonical {{version}}
+          # manifest. Branch pushes get an immutable sha-<sha7> manifest so
+          # consumers can still pin to a specific build. NO :latest, :main,
+          # or {{major}}.{{minor}} floating tags.
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=ref,event=branch
             type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-
 
       - name: Create and push manifest
         run: |
@@ -387,11 +393,10 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ inputs.image }}
+          # Semver-only policy — see create-manifest metadata step.
           tags: |
-            type=raw,value=latest,enable={{is_default_branch}}
-            type=ref,event=branch
             type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix=sha-
 
       - name: Tag single-arch image
         run: |
