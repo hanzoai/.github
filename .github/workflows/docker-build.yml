@@ -139,6 +139,16 @@ on:
         description: "Final manifest tags (JSON)"
         value: ${{ jobs.create-manifest.outputs.tags }}
 
+    # Secrets must be declared explicitly so cross-org callers
+    # (luxfi/*, zooai/*, liquidityio/*) can pass them. `secrets: inherit`
+    # only flows secrets when caller and reusable share the same
+    # org/enterprise — without this declaration, GitHub rejects the
+    # cross-org workflow_call at startup with no jobs dispatched.
+    secrets:
+      GCP_CREDENTIAL:
+        description: "GCP service-account JSON for Artifact Registry pushes (only required when registry=us-docker.pkg.dev)"
+        required: false
+
 jobs:
   # ── amd64 (ARC runner on hanzo-k8s) ──────────────────────────
   build-amd64:
