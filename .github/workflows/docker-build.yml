@@ -1,19 +1,20 @@
 name: Docker Build & Push (Reusable)
 
 # Reusable workflow for native multi-arch Docker builds.
+# Native ARC runners only — NO GitHub-hosted runners, period.
+#   runner-amd64: hanzo-build-linux-amd64 (DO ARC, max 30)
+#   runner-arm64: hanzo-build-linux-arm64 (ARC arm64, paused on DOKS — see hanzo LLM.md)
+#   runner-deploy: hanzo-deploy-linux-amd64 (DO ARC, max 20)
 #
-# Default runners are GitHub-hosted (universally reachable from any org):
-#   runner-amd64: ubuntu-latest        (GitHub-hosted x64)
-#   runner-arm64: ubuntu-24.04-arm     (GitHub-hosted Ampere)
-#   runner-deploy: ubuntu-latest       (GitHub-hosted x64)
-#
-# Callers inside the hanzoai org may override to ARC scale-sets when
-# the runner-group is online and labelled correctly:
-#   runner-amd64: hanzo-build-linux-amd64
-#   runner-arm64: hanzo-build-linux-arm64
-#   runner-deploy: hanzo-deploy-linux-amd64
-# Note: ARC runners are not visible from cross-org callers (luxfi/zooai/etc),
-# so leaving the GitHub-hosted defaults is the only correct choice for them.
+# Cross-org callers (luxfi/*, zooai/*, liquidityio/*) MUST override these
+# with their own org's ARC scale-set labels — `hanzoai`-org scale-sets
+# are not visible cross-org. Provision a per-org scale-set first
+# (see ~/work/hanzo/universe/infra/k8s/arc/) then pass:
+#   with:
+#     runner-amd64: lux-build-linux-amd64
+#     runner-arm64: lux-build-linux-arm64
+#     runner-deploy: lux-deploy-linux-amd64
+# GitHub-hosted runners are NOT a permitted fallback.
 #
 # ─── Registry support ────────────────────────────────────────────────
 # registry=ghcr.io  (default) → GITHUB_TOKEN login for hanzoai/luxfi/zooai
@@ -116,16 +117,16 @@ on:
         default: ""
         type: string
       runner-amd64:
-        description: "Runner label for amd64 builds (default: GitHub-hosted ubuntu-latest)"
-        default: "ubuntu-latest"
+        description: "Runner label for amd64 builds (ARC). Cross-org callers MUST override with their org's pool."
+        default: "hanzo-build-linux-amd64"
         type: string
       runner-arm64:
-        description: "Runner label for arm64 builds (default: GitHub-hosted ubuntu-24.04-arm)"
-        default: "ubuntu-24.04-arm"
+        description: "Runner label for arm64 builds (ARC). Cross-org callers MUST override with their org's pool."
+        default: "hanzo-build-linux-arm64"
         type: string
       runner-deploy:
-        description: "Runner label for deploy jobs (default: GitHub-hosted ubuntu-latest)"
-        default: "ubuntu-latest"
+        description: "Runner label for deploy jobs (ARC). Cross-org callers MUST override with their org's pool."
+        default: "hanzo-deploy-linux-amd64"
         type: string
 
     outputs:
