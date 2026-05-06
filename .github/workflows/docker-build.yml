@@ -201,6 +201,8 @@ jobs:
           # Semver-only policy: NEVER push :latest, :main, or other floating tags.
           # Branch builds get a SHA-prefixed immutable tag; PR builds keep their
           # ephemeral pr-N tag for review apps. Anything else is rejected.
+          flavor: |
+            latest=false
           tags: |
             type=semver,pattern={{version}},suffix=-amd64${{ inputs.tag-suffix }}
             type=sha,prefix=sha-,suffix=-amd64${{ inputs.tag-suffix }}
@@ -270,6 +272,8 @@ jobs:
         with:
           images: ${{ inputs.image }}
           # Semver-only policy — see build-amd64 metadata step.
+          flavor: |
+            latest=false
           tags: |
             type=semver,pattern={{version}},suffix=-arm64${{ inputs.tag-suffix }}
             type=sha,prefix=sha-,suffix=-arm64${{ inputs.tag-suffix }}
@@ -328,6 +332,8 @@ jobs:
           # manifest. Branch pushes get an immutable sha-<sha7> manifest so
           # consumers can still pin to a specific build. NO :latest, :main,
           # or {{major}}.{{minor}} floating tags.
+          flavor: |
+            latest=false
           tags: |
             type=semver,pattern={{version}}
             type=sha,prefix=sha-
@@ -394,6 +400,8 @@ jobs:
         with:
           images: ${{ inputs.image }}
           # Semver-only policy — see create-manifest metadata step.
+          flavor: |
+            latest=false
           tags: |
             type=semver,pattern={{version}}
             type=sha,prefix=sha-
