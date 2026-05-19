@@ -1,109 +1,96 @@
-# Hanzo AI
+# Hanzo AI — Open Source
 
-AI infrastructure for the agentic era. LLM gateway, MCP tools, multi-agent SDKs, and developer tools for building, deploying, and managing AI applications at scale.
+The Hanzo OSS estate, mapped.
 
-[![Discord](https://img.shields.io/discord/1234567890?label=Discord&logo=discord)](https://discord.gg/hanzo)
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
-
-Hanzo AI (Techstars '17) provides the complete AI development stack -- from model serving through 100+ LLM providers, to 260+ MCP tools for AI agents, to multi-agent orchestration SDKs, and full-stack deployment infrastructure. Built for developers shipping AI-native applications.
-
-## Quick Start
+## Start here
 
 ```bash
-# LLM Gateway -- unified proxy for 100+ providers
-pip install hanzo
-hanzo gateway --port 4000
-
-# MCP Tools -- 260+ tools for AI agents
-npm install -g @hanzo/mcp
-
-# AI coding agent in your terminal
-pip install hanzo-dev
-hanzo-dev
+curl -fsSL hanzo.sh | bash
+hanzo init my-app
+hanzo dev
 ```
+
+## Canonical taxonomy
+
+### Core platform
+| Repo | Role |
+|---|---|
+| [cloud](https://github.com/hanzoai/cloud) | Unified Go control plane and binary (HIP-0106) |
+| [zip](https://github.com/hanzoai/zip) | Canonical Go web framework, Fiber v3-based |
+| [base](https://github.com/hanzoai/base) | Per-tenant SQLite + extension runtimes (HIP-0105) |
+| [iam](https://github.com/hanzoai/iam) | Identity, OAuth2/OIDC/SAML |
+| [kms](https://github.com/hanzoai/kms) | Secrets and signing |
+| [gateway](https://github.com/hanzoai/gateway) | HTTP gateway: routing, JWT, identity strip |
+| [vfs](https://github.com/hanzoai/vfs) | Object-store abstraction (HIP-0107) |
+| [commerce](https://github.com/hanzoai/commerce) | Checkout + billing (light router; NOT in PCI scope) |
+| [o11y](https://github.com/hanzoai/o11y) | Metrics + traces + logs |
+
+### Agent + tooling
+| Repo | Role |
+|---|---|
+| [mcp](https://github.com/hanzoai/mcp) | Model Context Protocol (HIP-0300 unified tools) |
+| [agents](https://github.com/hanzoai/agents) | Multi-agent orchestration |
+| [brain](https://github.com/hanzoai/brain) | Memory + RAG |
+| [ai](https://github.com/hanzoai/ai) | LLM control plane + RAG + model hub |
+
+### SDKs
+| Repo | Lang |
+|---|---|
+| [zip-rs](https://github.com/hanzoai/zip-rs) | Rust handler SDK (wasm output) |
+| [zip-js](https://github.com/hanzoai/zip-js) | TypeScript handler SDK |
+| [python-sdk](https://github.com/hanzoai/python-sdk) | Python SDK |
+| [go-sdk](https://github.com/hanzoai/go-sdk) | Go SDK |
+| [rust-sdk](https://github.com/hanzoai/rust-sdk) | Rust SDK with crypto/DID |
+| [js-sdk](https://github.com/hanzoai/js-sdk) | TypeScript client library |
+
+### Apps
+| Repo | Role |
+|---|---|
+| [chat](https://github.com/hanzoai/chat) | Hanzo Chat — 14 Zen models + MCP tools |
+| [platform](https://github.com/hanzoai/platform) | PaaS deployment UI |
+| [console](https://github.com/hanzoai/console) | LLM dev + evals + prompt management |
+| [desktop](https://github.com/hanzoai/desktop) | Desktop agent client |
+| [flow](https://github.com/hanzoai/flow) | Visual workflow builder |
+| [bot](https://github.com/hanzoai/bot) | Channel adapter framework |
+
+### Isolated workers
+| Repo | Lang | Why isolated |
+|---|---|---|
+| [vault](https://github.com/hanzoai/vault) | Go | PCI-DSS CDE (the only system that touches PAN) |
+| [payments](https://github.com/hanzoai/payments) | Rust | PCI-CDE-connected, payment orchestration |
+| [datastore](https://github.com/hanzoai/datastore) | C++ | OLAP column store |
+| [engine](https://github.com/hanzoai/engine) | Rust | Inference worker (CUDA/Metal/CPU) |
+| [insights](https://github.com/hanzoai/insights) | Python | LLM observability + evals + prompt mgmt |
+
+### Specs
+| Repo | Role |
+|---|---|
+| [HIPs](https://github.com/hanzoai/HIPs) | Hanzo Improvement Proposals — protocol specs |
 
 ## Architecture
 
+- **Unified binary** (HIP-0106): single Go process mounts iam, kms, base, commerce, ai, gateway, o11y, vfs, mq, dns, amqp, mcp via the `Mount(*zip.App, cloud.Deps) error` contract.
+- **Extension runtimes** (HIP-0105): user code runs in goja (JS), pyvm (Python), wazero (Rust/AS/wasm), starkvm (Starlark policy DSL).
+- **Per-tenant SQLite** (HIP-0302): each org gets its own SQLite file with KMS-derived DEK; replicated to S3 via [replicate](https://github.com/hanzoai/replicate).
+- **PCI isolation**: vault is the only L1-audited CDE; payments and commerce are CDE-connected; everything else is out of scope.
+- **White-label**: same binary, different brand at startup. Fork [hanzoai/cloud](https://github.com/hanzoai/cloud) to launch your own ecosystem.
+
+## Get involved
+
+- Specs: [HIPs](https://github.com/hanzoai/HIPs)
+- Security: see `SECURITY.md` in any core repo
+- PR response: 48 hours
+- License: BSD-3, Apache-2.0, or MIT per repo
+
 ```
-Applications:  Chat  |  Search  |  Code  |  Dev  |  Flow
-                     |          |        |       |
-Gateway:       LLM Gateway (100+ providers, load balancing, caching)
-                     |
-Protocol:      Model Context Protocol (260+ tools)
-                     |
-Models:        Jin (multimodal)  |  Zen LM (frontier)  |  Any provider
-                     |
-Compute:       Hanzo Network (decentralized AI compute)
+HIPs implemented:
+- HIP-0014 Application Deployment
+- HIP-0026 IAM
+- HIP-0027 KMS
+- HIP-0037 AI Cloud Platform
+- HIP-0060 Serverless Functions
+- HIP-0105 In-Process Extension Runtime
+- HIP-0106 Unified Cloud Binary
+- HIP-0107 Streaming Replication over VFS
+- HIP-0302 Encrypted SQLite + ZapDB Durability
 ```
-
-## Core Projects
-
-### Infrastructure
-| Project | Description |
-|---------|-------------|
-| [gateway](https://github.com/hanzoai/gateway) | Unified LLM gateway -- 100+ providers, load balancing, caching |
-| [mcp](https://github.com/hanzoai/mcp) | Model Context Protocol server with 260+ tools for AI agents |
-| [agent](https://github.com/hanzoai/agent) | Multi-agent SDK with OpenAI-compatible API |
-| [console](https://github.com/hanzoai/console) | LLM dev environment -- debug, fine-tune, monitor |
-| [cloud](https://github.com/hanzoai/cloud) | Unified AI infrastructure and MCP management platform |
-
-### Developer Tools
-| Project | Description |
-|---------|-------------|
-| [code](https://github.com/hanzoai/code) | Open source AI code editor -- any model, full data control |
-| [dev](https://github.com/hanzoai/dev) | AI coding agent in your terminal |
-| [cli](https://github.com/hanzoai/cli) | Deploy, manage, and interact with AI infrastructure |
-| [flow](https://github.com/hanzoai/flow) | Visual drag-and-drop AI workflow builder |
-| [search](https://github.com/hanzoai/search) | AI-powered search with generative UI |
-
-### SDKs
-| Language | Package |
-|----------|---------|
-| Python | [python-sdk](https://github.com/hanzoai/python-sdk) -- `pip install hanzo` |
-| TypeScript | [js-sdk](https://github.com/hanzoai/js-sdk) -- `npm install @hanzo/api` |
-| Go | [go-sdk](https://github.com/hanzoai/go-sdk) -- `go get github.com/hanzoai/go-sdk` |
-| Rust | [rust-sdk](https://github.com/hanzoai/rust-sdk) -- `cargo add hanzo` |
-
-### AI Research
-| Project | Description |
-|---------|-------------|
-| [jin](https://github.com/hanzoai/jin) | Multimodal AI -- vision, audio, 3D embeddings |
-| [operative](https://github.com/hanzoai/operative) | Autonomous computer use agent for Claude |
-| [node](https://github.com/hanzoai/node) | Hanzo Network node for decentralized AI compute |
-| [contracts](https://github.com/hanzoai/contracts) | Smart contracts -- ERC20, staking, governance |
-
-## Key Protocols
-
-| Protocol | Proposal | Purpose |
-|----------|----------|---------|
-| ASO | HIP-002 | Active Semantic Optimization |
-| HMM | HIP-004 | Hamiltonian Market Maker |
-
-## Ecosystem
-
-| Organization | Focus | Link |
-|---|---|---|
-| **Hanzo AI** | AI infrastructure, LLM gateway, MCP tools | [github.com/hanzoai](https://github.com/hanzoai) |
-| **Lux Network** | Post-quantum blockchain, FHE, multi-consensus | [github.com/luxfi](https://github.com/luxfi) |
-| **Zen LM** | Frontier language models, 600M-480B parameters | [github.com/zenlm](https://github.com/zenlm) |
-| **Zoo Labs** | Open AI research, DeSci, 501(c)(3) foundation | [github.com/zoo-labs](https://github.com/zoo-labs) |
-| **Lux FHE** | Fully homomorphic encryption research + SDK | [github.com/luxfhe](https://github.com/luxfhe) |
-| **Lux C++** | High-performance C++ libraries | [github.com/luxcpp](https://github.com/luxcpp) |
-| **Hanzo KMS** | Enterprise secret management | [github.com/hanzokms](https://github.com/hanzokms) |
-| **Hanzo ID** | Identity, OAuth2/OIDC, WebAuthn | [github.com/hanzoid](https://github.com/hanzoid) |
-
-### Links
-- [Papers](https://github.com/luxfi/papers) -- 329+ research papers
-- [Stats](https://zeekay.github.io/stats/) -- 38,906+ commits, 59M net LOC
-- [Security](https://github.com/luxfi/node/blob/main/SECURITY.md) -- cryptographic audit trail
-- [History](https://github.com/luxfi/node/blob/main/HISTORY.md) -- 2008-2026 timeline
-
-## Resources
-
-- [hanzo.ai](https://hanzo.ai) -- Website
-- [docs.hanzo.ai](https://docs.hanzo.ai) -- Documentation
-- [hanzo.network](https://hanzo.network) -- Compute marketplace
-
-Apache 2.0 -- See individual repositories for details.
-
-*Hanzo AI Inc. -- Techstars '17 -- San Francisco*
