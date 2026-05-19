@@ -198,15 +198,18 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ inputs.image }}
-          # Semver-only policy: NEVER push :latest, :main, or other floating tags.
-          # Branch builds get a SHA-prefixed immutable tag; PR builds keep their
-          # ephemeral pr-N tag for review apps. Anything else is rejected.
+          # Tag policy:
+          #   v* git tag    → :{{version}}-amd64 AND :latest-amd64
+          #   branch push   → :sha-<sha7>-amd64 (immutable, no floating)
+          #   PR push       → :pr-N-amd64 (ephemeral review)
+          # :latest tracks the most recent semver release (never floats off main).
           flavor: |
-            latest=false
+            latest=auto
+            suffix=-amd64${{ inputs.tag-suffix }},onlatest=true
           tags: |
-            type=semver,pattern={{version}},suffix=-amd64${{ inputs.tag-suffix }}
-            type=sha,prefix=sha-,suffix=-amd64${{ inputs.tag-suffix }}
-            type=ref,event=pr,suffix=-amd64${{ inputs.tag-suffix }}
+            type=semver,pattern={{version}}
+            type=sha,prefix=sha-
+            type=ref,event=pr
 
       - name: Build and push
         id: build
@@ -271,13 +274,14 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ inputs.image }}
-          # Semver-only policy — see build-amd64 metadata step.
+          # Tag policy — see build-amd64 metadata step.
           flavor: |
-            latest=false
+            latest=auto
+            suffix=-arm64${{ inputs.tag-suffix }},onlatest=true
           tags: |
-            type=semver,pattern={{version}},suffix=-arm64${{ inputs.tag-suffix }}
-            type=sha,prefix=sha-,suffix=-arm64${{ inputs.tag-suffix }}
-            type=ref,event=pr,suffix=-arm64${{ inputs.tag-suffix }}
+            type=semver,pattern={{version}}
+            type=sha,prefix=sha-
+            type=ref,event=pr
 
       - name: Build and push
         id: build
@@ -328,12 +332,13 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ inputs.image }}
-          # Semver-only policy: only v* tags produce a canonical {{version}}
-          # manifest. Branch pushes get an immutable sha-<sha7> manifest so
-          # consumers can still pin to a specific build. NO :latest, :main,
-          # or {{major}}.{{minor}} floating tags.
+          # Multi-arch manifest tag policy:
+          #   v* git tag    → :{{version}} AND :latest (manifest pointing to both arches)
+          #   branch push   → :sha-<sha7> (immutable, no floating)
+          # :latest tracks the most recent semver release so deploys that pin
+          # :latest always advance to a real, released build.
           flavor: |
-            latest=false
+            latest=auto
           tags: |
             type=semver,pattern={{version}}
             type=sha,prefix=sha-
@@ -399,9 +404,9 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ inputs.image }}
-          # Semver-only policy — see create-manifest metadata step.
+          # Tag policy — see create-manifest metadata step.
           flavor: |
-            latest=false
+            latest=auto
           tags: |
             type=semver,pattern={{version}}
             type=sha,prefix=sha-
