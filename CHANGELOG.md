@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.0.19 (2026-05-19)
+
+- docs: canonical org profile per Hanzo OSS taxonomy (79ebb5e)
+
+# Changelog
+
 ## v0.0.18 (2026-05-19)
 
 No conventional commits found
