@@ -73,8 +73,12 @@ on:
         default: "Dockerfile"
         type: string
       build-args:
-        description: "Docker build args (multiline KEY=VALUE)"
+        description: "Docker build args (multiline KEY=VALUE). Concatenated with go-experiment for Go builds."
         default: ""
+        type: string
+      go-experiment:
+        description: "GOEXPERIMENT value for Go builds (forwarded as GO_EXPERIMENT build-arg). Default 'jsonv2' per SCALE_STANDARD.md §2 — -12% time / -23% allocs at the JSON edge. Set to '' to opt out."
+        default: "jsonv2"
         type: string
       target:
         description: "Docker build target stage"
@@ -218,7 +222,13 @@ jobs:
           context: ${{ inputs.context }}
           file: ${{ inputs.context }}/${{ inputs.dockerfile }}
           platforms: linux/amd64
-          build-args: ${{ inputs.build-args }}
+          # SCALE_STANDARD.md §2: GO_EXPERIMENT=jsonv2 by default for
+          # all Go builds. Dockerfiles consume via `ARG GO_EXPERIMENT` +
+          # `ENV GOEXPERIMENT=${GO_EXPERIMENT}` before `go build`.
+          # Non-Go Dockerfiles ignore the unused ARG.
+          build-args: |
+            GO_EXPERIMENT=${{ inputs.go-experiment }}
+            ${{ inputs.build-args }}
           target: ${{ inputs.target || '' }}
           labels: ${{ steps.meta.outputs.labels }}
           tags: ${{ steps.meta.outputs.tags }}
@@ -290,7 +300,13 @@ jobs:
           context: ${{ inputs.context }}
           file: ${{ inputs.context }}/${{ inputs.dockerfile }}
           platforms: linux/arm64
-          build-args: ${{ inputs.build-args }}
+          # SCALE_STANDARD.md §2: GO_EXPERIMENT=jsonv2 by default for
+          # all Go builds. Dockerfiles consume via `ARG GO_EXPERIMENT` +
+          # `ENV GOEXPERIMENT=${GO_EXPERIMENT}` before `go build`.
+          # Non-Go Dockerfiles ignore the unused ARG.
+          build-args: |
+            GO_EXPERIMENT=${{ inputs.go-experiment }}
+            ${{ inputs.build-args }}
           target: ${{ inputs.target || '' }}
           labels: ${{ steps.meta.outputs.labels }}
           tags: ${{ steps.meta.outputs.tags }}
