@@ -90,7 +90,11 @@ jobs:
           from __future__ import annotations
           import pathlib, re, sys
           # Pre-consolidation labels that are no longer provisioned.
-          # Pre-consolidation labels that are no longer provisioned.\n          # Per the canonical docker-build.yml reusable, cross-org callers MUST\n          # use {lux,lqd}-build-* labels — those are NOT stale, they are the\n          # required per-org override pattern. Keep this list empty until\n          # genuinely stale labels are identified.\n          stale = re.compile(r"(?!.*)")  # never matches
+          # Per the canonical docker-build.yml reusable, cross-org callers
+          # MUST use {lux,lqd}-build-* labels — those are NOT stale, they
+          # are the required per-org override pattern. Keep this list
+          # empty until genuinely stale labels are identified.
+          stale = re.compile(r"(?!.*)")  # never matches
           root = pathlib.Path(".github/workflows")
           bad: list[str] = []
           for pattern in ("*.yml", "*.yaml"):
