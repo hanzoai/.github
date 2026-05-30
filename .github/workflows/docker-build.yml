@@ -152,15 +152,25 @@ on:
         description: "Final manifest tags (JSON)"
         value: ${{ jobs.create-manifest.outputs.tags }}
 
-    # Secrets must be declared explicitly so cross-org callers
-    # (luxfi/*, zooai/*, partner/*) can pass them. `secrets: inherit`
-    # only flows secrets when caller and reusable share the same
-    # org/enterprise — without this declaration, GitHub rejects the
-    # cross-org workflow_call at startup with no jobs dispatched.
-    secrets:
-      GCP_CREDENTIAL:
-        description: "GCP service-account JSON for Artifact Registry pushes (only required when registry=us-docker.pkg.dev)"
-        required: false
+    # NO explicit `secrets:` block. The previous version declared
+    # GCP_CREDENTIAL here on the theory that explicit declarations were
+    # required for cross-org `secrets: inherit`. Empirically the opposite
+    # is true: every cross-org caller (luxfi/operator, luxfi/devops,
+    # luxfi/faucet, luxfi/dex, luxfi/docs, luxfi/market, luxfi/netrunner,
+    # luxfi/chat, …) has been emitting `startup_failure` after 0–2s with
+    # no jobs dispatched since 2026-04-24. Cause: when a reusable
+    # workflow declares a `secrets:` block, GitHub validates the caller's
+    # secret visibility against THAT specific list at startup. For
+    # cross-org callers without `GCP_CREDENTIAL` defined in their org or
+    # repo, the validation fails and the workflow is rejected before
+    # any job runs.
+    #
+    # Omitting the `secrets:` block lets `secrets: inherit` flow every
+    # caller-accessible secret transparently. `${{ secrets.GCP_CREDENTIAL }}`
+    # below still resolves where the caller has it (partner org
+    # secret), and evaluates to empty string elsewhere. The GAR login
+    # step already gates on `inputs.registry == 'us-docker.pkg.dev'`,
+    # so empty GCP_CREDENTIAL on a ghcr.io push has no effect.
 
 jobs:
   # ── amd64 (ARC runner on hanzo-k8s) ──────────────────────────
