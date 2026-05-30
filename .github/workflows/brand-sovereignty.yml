@@ -1,0 +1,187 @@
+name: Brand Sovereignty (Reusable)
+
+# Fails a pull request that introduces cross-org brand identifiers into
+# source. Cross-org tooling references (OSS Go imports, container images,
+# dep manifests) stay allowed via exempt_paths / exempt_patterns.
+#
+# Authoritative policy: LP-0010 / HIP-0303 / ZIP-0025 / PIP-0006 / LIP-0006.
+#
+# How it works:
+#   1. Caller passes `rules-url` pointing at a per-org YAML
+#      (e.g. https://raw.githubusercontent.com/hanzoai/.github/main/brand-rules/hanzo.yml).
+#   2. The job downloads the rule file, enumerates PR-changed files via
+#      `git diff --name-only ${BASE}..${HEAD}`, strips exempt paths,
+#      and greps the survivors for forbidden strings (with exempt_patterns
+#      filtering matching lines).
+#   3. Surviving hits are emitted as GitHub Actions error annotations
+#      (`::error file=PATH,line=N::msg`) and the job exits non-zero.
+#
+# Usage (in any repo, .github/workflows/brand-sovereignty.yml):
+#
+#   name: Brand Sovereignty
+#   on:
+#     pull_request:
+#     push:
+#       branches: [main]
+#   jobs:
+#     check:
+#       uses: hanzoai/.github/.github/workflows/brand-sovereignty.yml@main
+#       with:
+#         rules-url: https://raw.githubusercontent.com/hanzoai/.github/main/brand-rules/hanzo.yml
+#
+# Or, for a repo that vendors its own rule file at .github/brand-sovereignty.yml,
+# omit `rules-url` and the workflow will use the in-tree file.
+
+on:
+  workflow_call:
+    inputs:
+      rules-url:
+        description: "Raw URL of the per-org brand rule YAML. If empty, .github/brand-sovereignty.yml in the calling repo is used."
+        required: false
+        default: ""
+        type: string
+      base-ref:
+        description: "Base ref to diff against on pull_request. Defaults to github.base_ref / origin/main."
+        required: false
+        default: ""
+        type: string
+
+jobs:
+  brand-check:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout PR head with full history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve rule file
+        id: rules
+        env:
+          RULES_URL: ${{ inputs.rules-url }}
+        run: |
+          set -euo pipefail
+          if [ -n "${RULES_URL}" ]; then
+            curl -sSfL -o /tmp/brand-rules.yml "${RULES_URL}"
+            echo "source=${RULES_URL}" >> "$GITHUB_OUTPUT"
+          elif [ -f .github/brand-sovereignty.yml ]; then
+            cp .github/brand-sovereignty.yml /tmp/brand-rules.yml
+            echo "source=in-tree (.github/brand-sovereignty.yml)" >> "$GITHUB_OUTPUT"
+          else
+            echo "No rules-url provided and no .github/brand-sovereignty.yml in tree."
+            echo "Pass inputs.rules-url or commit a rule file."
+            exit 1
+          fi
+          echo "::notice::Brand rules loaded from ${RULES_URL:-in-tree}"
+
+      - name: Determine changed files
+        id: diff
+        env:
+          BASE_REF_INPUT: ${{ inputs.base-ref }}
+          EVENT_NAME: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.ref }}
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          # On pull_request, diff PR base..HEAD. On push, scan the full tree.
+          if [ "${EVENT_NAME}" = "pull_request" ]; then
+            BASE_SHA="${PR_BASE_SHA}"
+            if [ -z "${BASE_SHA}" ] && [ -n "${BASE_REF_INPUT}" ]; then
+              git fetch --no-tags --depth=1 origin "${BASE_REF_INPUT}" || true
+              BASE_SHA="$(git rev-parse "origin/${BASE_REF_INPUT}")"
+            fi
+            if [ -z "${BASE_SHA}" ]; then
+              git fetch --no-tags --depth=1 origin "${PR_BASE:-main}" || true
+              BASE_SHA="$(git rev-parse "origin/${PR_BASE:-main}")"
+            fi
+            git diff --name-only --diff-filter=ACMR "${BASE_SHA}"...HEAD > /tmp/changed.txt
+            echo "mode=pr" >> "$GITHUB_OUTPUT"
+          else
+            git ls-files > /tmp/changed.txt
+            echo "mode=full" >> "$GITHUB_OUTPUT"
+          fi
+          echo "Files in scope: $(wc -l < /tmp/changed.txt)"
+          head -50 /tmp/changed.txt || true
+
+      - name: Install pyyaml
+        run: pip install --quiet 'pyyaml>=6'
+
+      - name: Scan for forbidden brand identifiers
+        env:
+          MODE: ${{ steps.diff.outputs.mode }}
+        run: |
+          python3 - <<'PY'
+          from __future__ import annotations
+          import fnmatch, os, pathlib, re, sys, yaml
+
+          rules = yaml.safe_load(pathlib.Path("/tmp/brand-rules.yml").read_text())
+          org = rules.get("org") or "<unset>"
+          forbidden = list(rules.get("forbidden_in_source") or [])
+          exempt_paths = list(rules.get("exempt_paths") or [])
+          exempt_patterns = [re.compile(p) for p in (rules.get("exempt_patterns") or [])]
+
+          if not forbidden:
+              print(f"::warning::No forbidden_in_source declared for org={org}; nothing to check.")
+              sys.exit(0)
+
+          changed = [
+              line.strip()
+              for line in pathlib.Path("/tmp/changed.txt").read_text().splitlines()
+              if line.strip()
+          ]
+
+          def is_exempt_path(rel: str) -> bool:
+              base = os.path.basename(rel)
+              for glob in exempt_paths:
+                  # Direct match against the full relative path.
+                  if fnmatch.fnmatch(rel, glob):
+                      return True
+                  # `**/foo` style globs must also match root-level files
+                  # and any-depth files. Python's fnmatch treats `**` as
+                  # a single segment, so strip it and re-test the full
+                  # path and the basename.
+                  if glob.startswith("**/"):
+                      tail = glob[3:]
+                      if fnmatch.fnmatch(rel, tail) or fnmatch.fnmatch(base, tail):
+                          return True
+              return False
+
+          # Compile forbidden into one alternation regex per file scan.
+          forbidden_re = re.compile("|".join(re.escape(s) for s in forbidden))
+
+          violations: list[tuple[str, int, str, str]] = []
+          for rel in changed:
+              if is_exempt_path(rel):
+                  continue
+              p = pathlib.Path(rel)
+              if not p.is_file():
+                  continue  # deleted in this rev
+              try:
+                  text = p.read_text(encoding="utf-8", errors="replace")
+              except Exception:
+                  continue
+              for n, line in enumerate(text.splitlines(), 1):
+                  m = forbidden_re.search(line)
+                  if not m:
+                      continue
+                  # Line-level exemption (e.g. Go import URL is OK).
+                  if any(pat.search(line) for pat in exempt_patterns):
+                      continue
+                  violations.append((rel, n, m.group(0), line.strip()))
+
+          if not violations:
+              print(f"Brand sovereignty OK for org={org}: 0 violations across {len(changed)} files.")
+              sys.exit(0)
+
+          print(f"Brand sovereignty FAILED for org={org}: {len(violations)} violation(s).\n")
+          for path, lineno, hit, line in violations:
+              # GitHub Actions error annotation:
+              msg = f"forbidden brand identifier '{hit}' in {org}/* repo"
+              print(f"::error file={path},line={lineno}::{msg} -- {line[:160]}")
+          # Also print a plain summary for log readability.
+          print()
+          print("Summary:")
+          for path, lineno, hit, _ in violations:
+              print(f"  {path}:{lineno}: {hit}")
+          sys.exit(1)
+          PY
