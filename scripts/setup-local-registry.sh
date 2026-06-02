@@ -116,8 +116,12 @@ EOF
     echo "  scheduled: launchd @3am daily"
     ;;
   Linux)
-    # cron
-    (crontab -l 2>/dev/null | grep -v "docker-registry-prune"; echo "0 3 * * * ${PRUNE_SCRIPT}") | crontab -
+    # cron — non-interactive crontab can be flaky, write file then load
+    TMPCRON=$(mktemp)
+    crontab -l 2>/dev/null | grep -v "docker-registry-prune" > "$TMPCRON" || true
+    echo "0 3 * * * ${PRUNE_SCRIPT}" >> "$TMPCRON"
+    crontab "$TMPCRON"
+    rm -f "$TMPCRON"
     echo "  scheduled: cron @3am daily"
     ;;
 esac
