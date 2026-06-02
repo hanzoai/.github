@@ -80,7 +80,19 @@ case "$UNAME_S" in
 esac
 
 RUNNER_NAME="${HOST}-${ORG}-${ARCH}"
-LABELS="self-hosted,${HOST}-${ORG}-${ARCH},${HOST}-${ORG}-${OS}"
+# Labels:
+#   self-hosted                           — standard self-hosted marker
+#   <host>-<org>-<arch>                   — unique runner ID (pin a specific host)
+#   <host>-<org>-<os>                     — pin by OS family
+#   <org>-<arch>                          — POOL: round-robin any arch runner for this org
+#   <org>-<os>-<arch>                     — POOL: round-robin any (os,arch) for this org
+#   <org>-<os>                            — POOL: round-robin any OS runner for this org
+LABELS="self-hosted"
+LABELS+=",${HOST}-${ORG}-${ARCH}"
+LABELS+=",${HOST}-${ORG}-${OS}"
+LABELS+=",${ORG}-${ARCH}"
+LABELS+=",${ORG}-${OS}-${ARCH}"
+LABELS+=",${ORG}-${OS}"
 INSTALL_DIR="${HOME}/actions-runner-${ORG}-${HOST}"
 RUNNER_URL="https://github.com/${ORG}"
 
