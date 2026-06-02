@@ -9,7 +9,7 @@ fallback (cost, queueing, no native ARM, no GPU access).
 | Nickname | Hardware | OS | Arch | Capacity | Purpose |
 |---|---|---|---|---|---|
 | **spark** | Apple Silicon Mac / Linux Ampere | macOS / Linux | arm64 | 121Gi RAM, 3Ti disk | Primary arm64 builder |
-| **evo** | Windows-host x86_64, WSL2 guest | Linux (WSL) / Windows | x86_64 | 32 CPU, 102Gi RAM | Primary amd64 + Windows native |
+| **evo** | Windows-host amd64, WSL2 guest | Linux (WSL) / Windows | amd64 | 32 CPU, 102Gi RAM | Primary amd64 + Windows native |
 | **dbc** | Apple Silicon Mac (M-series) | macOS 26+ | arm64 | (M-series) | Secondary arm64 + macOS native builder |
 
 Additional ephemeral capacity:
@@ -42,7 +42,7 @@ systemd unit (Linux/WSL) or launchd plist (macOS) named
 
 ```yaml
 runs-on: spark-luxfi-arm64        # arm64 build on spark for luxfi
-runs-on: evo-hanzoai-x86_64       # amd64 build on evo for hanzoai
+runs-on: evo-hanzoai-amd64       # amd64 build on evo for hanzoai
 runs-on: dbc-zooai-arm64          # arm64 build on dbc for zooai
 ```
 
@@ -51,7 +51,7 @@ Full label matrix:
 | Host | hanzoai | luxfi | zooai |
 |---|---|---|---|
 | **spark** | `spark-hanzoai-arm64` `spark-hanzoai-linux` | `spark-luxfi-arm64` `spark-luxfi-linux` | `spark-zooai-arm64` `spark-zooai-linux` |
-| **evo** | `evo-hanzoai-x86_64` `evo-hanzoai-linux` | `evo-luxfi-x86_64` `evo-luxfi-linux` | `evo-zooai-x86_64` `evo-zooai-linux` |
+| **evo** | `evo-hanzoai-amd64` `evo-hanzoai-linux` | `evo-luxfi-amd64` `evo-luxfi-linux` | `evo-zooai-amd64` `evo-zooai-linux` |
 | **dbc** | `dbc-hanzoai-arm64` `dbc-hanzoai-macos` | `dbc-luxfi-arm64` `dbc-luxfi-macos` | `dbc-zooai-arm64` `dbc-zooai-macos` |
 
 All runners also carry the standard `self-hosted` label.
@@ -71,7 +71,7 @@ GH_RUNNER_TOKEN=... ./install-runner.sh luxfi   dbc
 GH_RUNNER_TOKEN=... ./install-runner.sh zooai   dbc
 ```
 
-Script detects platform (Linux / WSL / macOS), arch (x86_64 / arm64),
+Script detects platform (Linux / WSL / macOS), arch (amd64 / arm64),
 downloads pinned runner version, registers org-scoped with correct
 labels, and installs an auto-restart service.
 
