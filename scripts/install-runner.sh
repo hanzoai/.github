@@ -57,9 +57,9 @@ case "$UNAME_S" in
     OS="linux"
     PLAT="linux"
     case "$UNAME_M" in
-      x86_64)  ARCH="x86_64"; PKG_ARCH="x64"   ;;
-      aarch64) ARCH="arm64";  PKG_ARCH="arm64" ;;
-      arm64)   ARCH="arm64";  PKG_ARCH="arm64" ;;
+      x86_64)  ARCH="amd64"; PKG_ARCH="x64"   ;;
+      aarch64) ARCH="arm64"; PKG_ARCH="arm64" ;;
+      arm64)   ARCH="arm64"; PKG_ARCH="arm64" ;;
       *) echo "unsupported linux arch: $UNAME_M" >&2; exit 3 ;;
     esac
     # detect WSL
@@ -71,8 +71,8 @@ case "$UNAME_S" in
     OS="macos"
     PLAT="osx"
     case "$UNAME_M" in
-      arm64)  ARCH="arm64";  PKG_ARCH="arm64" ;;
-      x86_64) ARCH="x86_64"; PKG_ARCH="x64"   ;;
+      arm64)  ARCH="arm64"; PKG_ARCH="arm64" ;;
+      x86_64) ARCH="amd64"; PKG_ARCH="x64"   ;;
       *) echo "unsupported darwin arch: $UNAME_M" >&2; exit 3 ;;
     esac
     ;;
