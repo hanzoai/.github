@@ -6,15 +6,21 @@ All CI/CD for `hanzoai / luxfi / zooai / parsdao / zenlm` runs on **`arcd`** (so
 
 GitHub-hosted runners (`ubuntu-latest`, `macos-latest`, `windows-latest`) are NOT a permitted fallback — pool labels below are the canonical replacement.
 
-## Hosts
+## Hosts (3 physical, 5 arcds)
 
-| Host | OS / Arch | Role | Container | Service mgr | Daemon endpoint |
+Two hosts run two personalities each — one arcd per OS:
+
+| Host | Personality | OS / Arch | Container | Service mgr | Endpoint |
 |---|---|---|---|---|---|
-| **dbc** | macOS arm64 (Apple Silicon M4 Max) | Apple-native builds | native | `~/Library/LaunchAgents/ai.hanzo.arcd.plist` (launchd) | `dbc:7777` |
-| **dbc-linux** | Ubuntu 24.04 aarch64 | Linux arm64 builds | colima profile `arcd` (vz + Rosetta, 4cpu/8GB) | `arcd.service` (systemd, in-VM) | `dbc:7777` inside VM |
-| **evo** Linux | Ubuntu amd64 (WSL2) | Linux amd64 builds, GPU passthrough | WSL2 on Windows host | `arcd.service` (systemd) | `evo:7777` |
-| **evo** Windows | Windows amd64 native | Windows-native builds (.msi/.exe/Authenticode) | native | Scheduled Task `arcd` (AtLogOn, RestartCount=999) | `evo:7778` |
-| **spark** | Ubuntu Ampere aarch64 (3Ti disk, 121Gi RAM) | Linux arm64 builds | native | `arcd.service` (systemd) | `spark:7777` |
+| **dbc** (Apple Silicon M4 Max) | **macOS arm64** (Apple-native) | native | macOS | `~/Library/LaunchAgents/ai.hanzo.arcd.plist` (launchd) | `dbc:7777` |
+| **dbc-linux** | **Linux arm64** | colima profile `arcd` (vz + Rosetta, 4cpu/8GB) | Ubuntu 24.04 in VM | `arcd.service` (systemd, in-VM) | `dbc:7777` inside VM |
+| **evo** WSL | **Linux amd64** | WSL2 on Windows host | Ubuntu | `arcd.service` (systemd) | `evo:7777` |
+| **evo** Windows | **Windows amd64** (Tauri `.msi`/`.exe`, Authenticode) | native | Windows | Scheduled Task `arcd` (AtLogOn, RestartCount=999) | `evo:7778` |
+| **spark** (Ampere) | **Linux arm64** | native | Ubuntu | `arcd.service` (systemd) | `spark:7777` |
+
+**Dual-personality hosts**: dbc serves both macOS (host) AND Linux arm64 (via colima VM). evo serves both Windows (native) AND Linux amd64 (via WSL2). Each personality is a separate arcd process with a distinct GitHub-reported OS, port, and config file — no conflict because they spawn different `actions-runner` binaries (`.exe` for Windows, ELF for Linux, Mach-O for macOS).
+
+**spark** is single-personality (Linux arm64 only) but the largest box (3Ti disk, 121Gi RAM) — primary builder for the `<org>-linux-arm64` pool with dbc-linux as round-robin partner.
 
 DO ARC scale-sets (`hanzo-build-linux-amd64`, `hanzo-deploy-linux-amd64`, `zoo-build-linux-amd64`, `lux-build-*`) remain online as ephemeral k8s capacity for amd64-only jobs that need horizontal scale.
 
