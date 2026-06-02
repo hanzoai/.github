@@ -1,19 +1,27 @@
 name: Docker Build & Push (Reusable)
 
 # Reusable workflow for native multi-arch Docker builds.
-# Native ARC runners only — NO GitHub-hosted runners, period.
+# Native runners only — NO GitHub-hosted runners, period.
 #   runner-amd64: hanzo-build-linux-amd64 (DO ARC, max 30)
-#   runner-arm64: hanzo-build-linux-arm64 (ARC arm64, paused on DOKS — see hanzo LLM.md)
+#   runner-arm64: spark-hanzoai-arm64 (self-hosted on spark.local — native ARM64)
+#                 ARC arm64 (hanzo-build-linux-arm64) is paused on DOKS until
+#                 DigitalOcean ships arm64 droplets; spark.local fills the gap
+#                 with native Ampere/aarch64 hardware. See memory:multiarch_builds.
 #   runner-deploy: hanzo-deploy-linux-amd64 (DO ARC, max 20)
 #
 # Cross-org callers (luxfi/*, zooai/*, liquidityio/*) MUST override these
-# with their own org's ARC scale-set labels — `hanzoai`-org scale-sets
-# are not visible cross-org. Provision a per-org scale-set first
-# (see ~/work/hanzo/universe/infra/k8s/arc/) then pass:
-#   with:
-#     runner-amd64: lux-build-linux-amd64
-#     runner-arm64: lux-build-linux-arm64
-#     runner-deploy: lux-deploy-linux-amd64
+# with their own org's pool labels — runner pools are NOT visible cross-org.
+# Pool labels per org:
+#   hanzoai  → runner-amd64: hanzo-build-linux-amd64   runner-arm64: spark-hanzoai-arm64
+#   luxfi    → runner-amd64: lux-build-linux-amd64     runner-arm64: spark-luxfi-arm64
+#                                                       (or evo-luxfi-amd64 for self-hosted amd64)
+#   zooai    → runner-amd64: zoo-build-linux-amd64     runner-arm64: spark-zooai-arm64
+#                                                       (or evo-zooai-amd64 for self-hosted amd64)
+#
+# Self-hosted swarm runners (evo.local / spark.local) registered per-org with
+# strict isolation (no cross-org labels — luxfi/* on hanzoai-labels won't
+# dispatch, per ARC pool rule). See memory:multiarch_builds and
+# /tmp/install-runner.sh on each host.
 # GitHub-hosted runners are NOT a permitted fallback.
 #
 # ─── Registry support ────────────────────────────────────────────────
@@ -133,8 +141,8 @@ on:
         default: "hanzo-build-linux-amd64"
         type: string
       runner-arm64:
-        description: "Runner label for arm64 builds (ARC). Cross-org callers MUST override with their org's pool."
-        default: "hanzo-build-linux-arm64"
+        description: "Runner label for arm64 builds. Default targets self-hosted spark.local (hanzoai org). Cross-org callers MUST override: luxfi→spark-luxfi-arm64, zooai→spark-zooai-arm64."
+        default: "spark-hanzoai-arm64"
         type: string
       runner-deploy:
         description: "Runner label for deploy jobs (ARC). Cross-org callers MUST override with their org's pool."
@@ -255,7 +263,7 @@ jobs:
           provenance: false
           push: ${{ inputs.push }}
 
-  # ── arm64 (ARC — GKE T2A Ampere native, hanzo-build-linux-arm64) ───
+  # ── arm64 (native — self-hosted spark.local default, override per org) ───
   build-arm64:
     if: contains(inputs.platforms, 'linux/arm64')
     runs-on: ${{ inputs.runner-arm64 }}
