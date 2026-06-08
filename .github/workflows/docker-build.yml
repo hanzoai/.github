@@ -3,16 +3,18 @@ name: Docker Build & Push (Reusable)
 # Reusable workflow for native multi-arch Docker builds.
 # Native runners only — NO GitHub-hosted runners, period.
 #   runner-amd64: hanzo-build-linux-amd64 (DO ARC, max 30)
-#   runner-arm64: spark-hanzoai-arm64 (self-hosted on spark.local — native ARM64)
+#   runner-arm64: spark-hanzo (self-hosted on spark.local — native ARM64).
 #                 ARC arm64 (hanzo-build-linux-arm64) is paused on DOKS until
 #                 DigitalOcean ships arm64 droplets; spark.local fills the gap
 #                 with native Ampere/aarch64 hardware. See memory:multiarch_builds.
+#                 Legacy label `spark-hanzoai-arm64` has zero advertised runners
+#                 since the arcd relabel — do not use.
 #   runner-deploy: hanzo-deploy-linux-amd64 (DO ARC, max 20)
 #
 # Cross-org callers (luxfi/*, zooai/*, partner/*) MUST override these
 # with their own org's pool labels — runner pools are NOT visible cross-org.
 # Pool labels per org:
-#   hanzoai  → runner-amd64: hanzo-build-linux-amd64   runner-arm64: spark-hanzoai-arm64
+#   hanzoai  → runner-amd64: hanzo-build-linux-amd64   runner-arm64: spark-hanzo
 #   luxfi    → runner-amd64: lux-build-linux-amd64     runner-arm64: spark-luxfi-arm64
 #                                                       (or evo-luxfi-amd64 for self-hosted amd64)
 #   zooai    → runner-amd64: zoo-build-linux-amd64     runner-arm64: spark-zooai-arm64
@@ -142,7 +144,7 @@ on:
         type: string
       runner-arm64:
         description: "Runner label for arm64 builds. Default targets self-hosted spark.local (hanzoai org). Cross-org callers MUST override: luxfi→spark-luxfi-arm64, zooai→spark-zooai-arm64."
-        default: "spark-hanzoai-arm64"
+        default: "spark-hanzo"
         type: string
       runner-deploy:
         description: "Runner label for deploy jobs (ARC). Cross-org callers MUST override with their org's pool."
@@ -342,8 +344,31 @@ jobs:
           push: ${{ inputs.push }}
 
   # ── Multi-platform manifest (both platforms) ─────────────────
+  #
+  # Composes the merged manifest from the per-arch tags the build jobs
+  # pushed, NOT from the build-job digest outputs. Rationale: the
+  # spark.local arm64 runner is on WiFi; multi-GB layer pushes succeed
+  # but the post-push `cache-to: type=gha` export occasionally drops
+  # mid-flight ("tls: bad record MAC", "rpc error: code = Unavailable,
+  # closing transport"). buildx then exits non-zero AFTER the image is
+  # already in the registry. Gating on `needs.*.result == 'success'`
+  # would skip this job even though every per-arch artifact is up.
+  #
+  # Instead: run with `always()`, verify each per-arch source tag
+  # actually exists in the registry, and use `crane index append` to
+  # compose the manifest server-side (registry API only — no image
+  # rebuild, no Docker daemon required, decouples manifest creation
+  # from buildx's cache-export reliability).
+  #
+  # If a per-arch tag is genuinely missing (real build failure), crane
+  # errors and this job fails, which correctly blocks deploy.
+  #
   create-manifest:
-    if: inputs.push && contains(inputs.platforms, 'linux/amd64') && contains(inputs.platforms, 'linux/arm64')
+    if: >-
+      always() &&
+      inputs.push &&
+      contains(inputs.platforms, 'linux/amd64') &&
+      contains(inputs.platforms, 'linux/arm64')
     runs-on: ${{ inputs.runner-amd64 }}
     needs: [build-amd64, build-arm64]
     permissions:
@@ -369,6 +394,20 @@ jobs:
           username: _json_key
           password: ${{ secrets.GCP_CREDENTIAL }}
 
+      - name: Install crane
+        run: |
+          set -euo pipefail
+          if command -v crane >/dev/null 2>&1; then
+            crane version
+            exit 0
+          fi
+          CRANE_VERSION="v0.20.2"
+          OS="$(uname -s)"; ARCH="$(uname -m)"
+          case "$ARCH" in x86_64) ARCH=x86_64;; aarch64|arm64) ARCH=arm64;; esac
+          URL="https://github.com/google/go-containerregistry/releases/download/${CRANE_VERSION}/go-containerregistry_${OS}_${ARCH}.tar.gz"
+          curl -fsSL "$URL" | sudo tar xz -C /usr/local/bin crane
+          crane version
+
       - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
@@ -385,18 +424,33 @@ jobs:
             type=semver,pattern={{version}}
             type=sha,prefix=sha-
 
-      - name: Create and push manifest
+      - name: Compose multi-arch manifest from per-arch tags
         run: |
+          set -euo pipefail
           IMAGE="${{ inputs.image }}"
-          AMD64_DIGEST="${{ needs.build-amd64.outputs.digest }}"
-          ARM64_DIGEST="${{ needs.build-arm64.outputs.digest }}"
-          echo "Creating manifest for ${IMAGE}"
-          echo "  amd64: ${AMD64_DIGEST}"
-          echo "  arm64: ${ARM64_DIGEST}"
-          docker buildx imagetools create \
-            $(jq -cr '.tags | map("-t " + .) | join(" ")' <<< "$DOCKER_METADATA_OUTPUT_JSON") \
-            "${IMAGE}@${AMD64_DIGEST}" \
-            "${IMAGE}@${ARM64_DIGEST}"
+          # Each merged manifest tag (e.g. ghcr.io/.../world:sha-abc1234)
+          # has deterministic per-arch source tags suffixed -amd64/-arm64.
+          # Verify both exist on the registry, then compose with crane.
+          mapfile -t TAGS < <(jq -r '.tags[]' <<< "$DOCKER_METADATA_OUTPUT_JSON")
+          if [ "${#TAGS[@]}" -eq 0 ]; then
+            echo "No manifest tags produced by metadata-action; nothing to compose."
+            exit 0
+          fi
+          for TAG_REF in "${TAGS[@]}"; do
+            BASE="${TAG_REF%:*}"
+            TAG="${TAG_REF##*:}"
+            AMD64_SRC="${BASE}:${TAG}-amd64"
+            ARM64_SRC="${BASE}:${TAG}-arm64"
+            echo "→ Verifying ${AMD64_SRC}"
+            crane manifest "${AMD64_SRC}" >/dev/null
+            echo "→ Verifying ${ARM64_SRC}"
+            crane manifest "${ARM64_SRC}" >/dev/null
+            echo "→ Composing ${TAG_REF}"
+            crane index append \
+              -t "${TAG_REF}" \
+              -m "${AMD64_SRC}" \
+              -m "${ARM64_SRC}"
+          done
         env:
           DOCKER_METADATA_OUTPUT_JSON: ${{ steps.meta.outputs.json }}
 
