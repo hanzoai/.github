@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.0.33 (2026-06-08)
+
+No conventional commits found
+
+# Changelog
+
 ## v0.0.32 (2026-06-02)
 
 No conventional commits found
