@@ -57,12 +57,12 @@ on:
         default: "preview.hanzo.ai"
         type: string
       runner-build:
-        description: "Runner for build jobs"
-        default: "hanzo-build-linux-amd64"
+        description: "Runner labels for build jobs as JSON-array string. Defaults to canonical arcd labels (matches evo)."
+        default: '["self-hosted","linux","amd64"]'
         type: string
       runner-deploy:
-        description: "Runner for deploy jobs (needs kubectl)"
-        default: "hanzo-deploy-linux-amd64"
+        description: "Runner labels for deploy jobs (needs kubectl) as JSON-array string. Defaults to canonical arcd labels."
+        default: '["self-hosted","linux","amd64"]'
         type: string
       e2e-enabled:
         description: "Run E2E smoke tests after deploy"
@@ -81,7 +81,7 @@ jobs:
   # ── Build preview image ──────────────────────────────────────
   build:
     if: github.event.action != 'closed'
-    runs-on: ${{ inputs.runner-build }}
+    runs-on: ${{ fromJson(inputs.runner-build) }}
     permissions:
       packages: write
       contents: read
@@ -128,7 +128,7 @@ jobs:
   deploy:
     if: github.event.action != 'closed'
     needs: build
-    runs-on: ${{ inputs.runner-deploy }}
+    runs-on: ${{ fromJson(inputs.runner-deploy) }}
     steps:
       - uses: actions/checkout@v4
 
@@ -292,7 +292,7 @@ jobs:
   # ── Cleanup on PR close ─────────────────────────────────────
   cleanup:
     if: github.event.action == 'closed'
-    runs-on: ${{ inputs.runner-deploy }}
+    runs-on: ${{ fromJson(inputs.runner-deploy) }}
     steps:
       - name: Delete preview namespace
         run: |
