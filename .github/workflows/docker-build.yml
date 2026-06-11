@@ -2,28 +2,17 @@ name: Docker Build & Push (Reusable)
 
 # Reusable workflow for native multi-arch Docker builds.
 # Native runners only — NO GitHub-hosted runners, period.
-#   runner-amd64: hanzo-build-linux-amd64 (DO ARC, max 30)
-#   runner-arm64: spark-hanzo (self-hosted on spark.local — native ARM64).
-#                 ARC arm64 (hanzo-build-linux-arm64) is paused on DOKS until
-#                 DigitalOcean ships arm64 droplets; spark.local fills the gap
-#                 with native Ampere/aarch64 hardware. See memory:multiarch_builds.
-#                 Legacy label `spark-hanzoai-arm64` has zero advertised runners
-#                 since the arcd relabel — do not use.
-#   runner-deploy: hanzo-deploy-linux-amd64 (DO ARC, max 20)
 #
-# Cross-org callers (luxfi/*, zooai/*, partner/*) MUST override these
-# with their own org's pool labels — runner pools are NOT visible cross-org.
-# Pool labels per org:
-#   hanzoai  → runner-amd64: hanzo-build-linux-amd64   runner-arm64: spark-hanzo
-#   luxfi    → runner-amd64: lux-build-linux-amd64     runner-arm64: spark-luxfi-arm64
-#                                                       (or evo-luxfi-amd64 for self-hosted amd64)
-#   zooai    → runner-amd64: zoo-build-linux-amd64     runner-arm64: spark-zooai-arm64
-#                                                       (or evo-zooai-amd64 for self-hosted amd64)
+# Canonical native arcd labels (every arcd host registers with these):
+#   amd64 jobs : [self-hosted, linux, amd64]   (matches evo)
+#   arm64 jobs : [self-hosted, linux, arm64]   (matches spark)
+#   macOS jobs : [self-hosted, macos]          (matches dbc)
 #
-# Self-hosted swarm runners (evo.local / spark.local) registered per-org with
-# strict isolation (no cross-org labels — luxfi/* on hanzoai-labels won't
-# dispatch, per ARC pool rule). See memory:multiarch_builds and
-# /tmp/install-runner.sh on each host.
+# Inputs (runner-amd64, runner-arm64, runner-deploy) carry JSON-array
+# strings and are decoded via fromJson() at the `runs-on:` site. Defaults
+# target the canonical arcd labels above. Cross-org callers do NOT need
+# to override — GitHub-side runner groups + arcd repo allowlist provide
+# org isolation on the shared labels.
 # GitHub-hosted runners are NOT a permitted fallback.
 #
 # ─── Registry support ────────────────────────────────────────────────
@@ -139,16 +128,16 @@ on:
         default: ""
         type: string
       runner-amd64:
-        description: "Runner label for amd64 builds (ARC). Cross-org callers MUST override with their org's pool."
-        default: "hanzo-build-linux-amd64"
+        description: "Runner labels for amd64 builds as JSON-array string. Defaults to canonical arcd labels (matches evo). Decoded via fromJson at runs-on."
+        default: '["self-hosted","linux","amd64"]'
         type: string
       runner-arm64:
-        description: "Runner label for arm64 builds. Default targets self-hosted spark.local (hanzoai org). Cross-org callers MUST override: luxfi→spark-luxfi-arm64, zooai→spark-zooai-arm64."
-        default: "spark-hanzo"
+        description: "Runner labels for arm64 builds as JSON-array string. Defaults to canonical arcd labels (matches spark). Decoded via fromJson at runs-on."
+        default: '["self-hosted","linux","arm64"]'
         type: string
       runner-deploy:
-        description: "Runner label for deploy jobs (ARC). Cross-org callers MUST override with their org's pool."
-        default: "hanzo-deploy-linux-amd64"
+        description: "Runner labels for deploy jobs as JSON-array string. Defaults to canonical arcd labels. Decoded via fromJson at runs-on."
+        default: '["self-hosted","linux","amd64"]'
         type: string
 
     outputs:
@@ -183,10 +172,10 @@ on:
     # so empty GCP_CREDENTIAL on a ghcr.io push has no effect.
 
 jobs:
-  # ── amd64 (ARC runner on hanzo-k8s) ──────────────────────────
+  # ── amd64 (native arcd runner — evo matches [self-hosted, linux, amd64]) ──
   build-amd64:
     if: contains(inputs.platforms, 'linux/amd64')
-    runs-on: ${{ inputs.runner-amd64 }}
+    runs-on: ${{ fromJson(inputs.runner-amd64) }}
     permissions:
       packages: write
       contents: read
@@ -265,10 +254,10 @@ jobs:
           provenance: false
           push: ${{ inputs.push }}
 
-  # ── arm64 (native — self-hosted spark.local default, override per org) ───
+  # ── arm64 (native arcd runner — spark matches [self-hosted, linux, arm64]) ──
   build-arm64:
     if: contains(inputs.platforms, 'linux/arm64')
-    runs-on: ${{ inputs.runner-arm64 }}
+    runs-on: ${{ fromJson(inputs.runner-arm64) }}
     permissions:
       packages: write
       contents: read
@@ -369,7 +358,7 @@ jobs:
       inputs.push &&
       contains(inputs.platforms, 'linux/amd64') &&
       contains(inputs.platforms, 'linux/arm64')
-    runs-on: ${{ inputs.runner-amd64 }}
+    runs-on: ${{ fromJson(inputs.runner-amd64) }}
     needs: [build-amd64, build-arm64]
     permissions:
       packages: write
@@ -472,7 +461,7 @@ jobs:
       (needs.build-amd64.result == 'success' || needs.build-arm64.result == 'success') &&
       !(needs.build-amd64.result == 'failure' || needs.build-arm64.result == 'failure') &&
       !(needs.build-amd64.result == 'cancelled' || needs.build-arm64.result == 'cancelled')
-    runs-on: ${{ inputs.runner-amd64 }}
+    runs-on: ${{ fromJson(inputs.runner-amd64) }}
     needs: [build-amd64, build-arm64]
     permissions:
       packages: write
@@ -535,7 +524,7 @@ jobs:
       (needs.create-manifest.result == 'success' || needs.tag-single-arch.result == 'success') &&
       !(needs.create-manifest.result == 'failure' || needs.tag-single-arch.result == 'failure') &&
       inputs.deploy && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
-    runs-on: ${{ inputs.runner-deploy }}
+    runs-on: ${{ fromJson(inputs.runner-deploy) }}
     needs: [create-manifest, tag-single-arch]
     environment: production
     steps:
