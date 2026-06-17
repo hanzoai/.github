@@ -1,5 +1,20 @@
 name: Docker Build & Push (Reusable)
 
+# ─── MIGRATION NOTICE ────────────────────────────────────────────────
+# This reusable workflow is now the FALLBACK build path. The canonical
+# build+deploy lifecycle is owned by platform.hanzo.ai: a repo commits a
+# `.platform.yml`, platform receives the GitHub webhook, schedules the
+# build onto the SAME self-hosted arcd pools, and rolls the image out via
+# the hanzo operator — independent of GitHub Actions billing/availability.
+# (The GHA billing-freeze incident proved GHA is a single point of failure.)
+#
+# To migrate a repo: add `.platform.yml` at its root (schema:
+# platform docs/PLATFORM_CI.md) and point its GitHub App webhook at
+# https://platform.hanzo.ai/v1/github-webhook. This workflow is RETAINED
+# (not deleted) as a fallback for repos that have not migrated yet and as
+# the build executor that platform's `platform-build.yml` delegates to.
+# ─────────────────────────────────────────────────────────────────────
+#
 # Reusable workflow for native multi-arch Docker builds.
 # Native runners only — NO GitHub-hosted runners, period.
 #
