@@ -277,6 +277,11 @@ jobs:
           cache-to: type=gha,scope=${{ inputs.image }}-amd64,mode=max
           provenance: false
           push: ${{ inputs.push }}
+          # Private cross-repo Go modules (hanzoai/*, luxfi/*): expose the org
+          # PAT as a BuildKit secret. Dockerfiles that need it consume via
+          # `RUN --mount=type=secret,id=gh_token`; others ignore it (no-op).
+          secrets: |
+            gh_token=${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
 
   # ── arm64 (native arcd runner — spark matches [self-hosted, linux, arm64]) ──
   build-arm64:
@@ -364,6 +369,11 @@ jobs:
           cache-to: type=gha,scope=${{ inputs.image }}-arm64,mode=max
           provenance: false
           push: ${{ inputs.push }}
+          # Private cross-repo Go modules (hanzoai/*, luxfi/*): expose the org
+          # PAT as a BuildKit secret. Dockerfiles that need it consume via
+          # `RUN --mount=type=secret,id=gh_token`; others ignore it (no-op).
+          secrets: |
+            gh_token=${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
 
   # ── Multi-platform manifest (both platforms) ─────────────────
   #
