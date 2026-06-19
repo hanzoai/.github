@@ -1,0 +1,106 @@
+name: Platform Build (reusable arcd executor)
+
+# Reusable executor for platform-native CI/CD (docs: platform docs/PLATFORM_CI.md).
+#
+# platform.hanzo.ai owns the build+deploy lifecycle. For the workflow_dispatch
+# dispatch mode it triggers a thin per-repo shim, which delegates here via
+# `uses:`. Keeping the build/push/callback logic in ONE place means a fix lands
+# once — not copied into every repo. The build muscle runs on self-hosted arcd
+# (the `runner-pool` input), never on GitHub-hosted runners.
+#
+# Repos on the native long-poll dispatch mode need no workflow at all — the
+# platform feeds arcd directly and the repo carries only hanzo.yml.
+
+on:
+  workflow_call:
+    inputs:
+      build-job-id:
+        description: Platform buildJob id (echoed back on completion)
+        required: true
+        type: string
+      target:
+        description: "Build target, e.g. linux/amd64"
+        required: true
+        type: string
+      runner-pool:
+        description: "arcd pool label, e.g. hanzoai-linux-amd64"
+        required: true
+        type: string
+      image:
+        description: "Fully-resolved image ref, e.g. ghcr.io/hanzoai/app:<sha>"
+        required: true
+        type: string
+      dockerfile:
+        description: Path to the Dockerfile
+        required: false
+        default: ./Dockerfile
+        type: string
+      context:
+        description: Build context
+        required: false
+        default: .
+        type: string
+      push:
+        description: Whether to push the built image
+        required: false
+        default: "true"
+        type: string
+    secrets:
+      PLATFORM_BUILD_CALLBACK_TOKEN:
+        required: true
+
+jobs:
+  build:
+    runs-on: ${{ inputs.runner-pool }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Log in to GHCR
+        if: ${{ inputs.push == 'true' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ inputs.context }}
+          file: ${{ inputs.dockerfile }}
+          push: ${{ inputs.push }}
+          tags: ${{ inputs.image }}
+          provenance: false
+
+      - name: Report success to platform
+        if: success()
+        env:
+          TOKEN: ${{ secrets.PLATFORM_BUILD_CALLBACK_TOKEN }}
+        run: |
+          curl -fsS -X POST "https://platform.hanzo.ai/v1/build-callback" \
+            -H "Authorization: Bearer ${TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -nc \
+              --arg id '${{ inputs.build-job-id }}' \
+              --arg inst '${{ github.event.installation.id }}' \
+              --arg img '${{ inputs.image }}' \
+              '{buildJobId:$id, outcome:"success", installationId:$inst, log:("built "+$img)}')"
+
+      - name: Report failure to platform
+        if: failure()
+        env:
+          TOKEN: ${{ secrets.PLATFORM_BUILD_CALLBACK_TOKEN }}
+        run: |
+          curl -fsS -X POST "https://platform.hanzo.ai/v1/build-callback" \
+            -H "Authorization: Bearer ${TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d "$(jq -nc \
+              --arg id '${{ inputs.build-job-id }}' \
+              --arg inst '${{ github.event.installation.id }}' \
+              '{buildJobId:$id, outcome:"failure", installationId:$inst, error:"build step failed"}')"
