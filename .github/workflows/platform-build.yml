@@ -47,7 +47,9 @@ on:
         type: string
     secrets:
       PLATFORM_BUILD_CALLBACK_TOKEN:
-        required: true
+        # Optional: when unset (e.g. a manual/tokenless build) the callback
+        # steps no-op instead of hard-failing the build.
+        required: false
 
 jobs:
   build:
@@ -83,6 +85,7 @@ jobs:
         env:
           TOKEN: ${{ secrets.PLATFORM_BUILD_CALLBACK_TOKEN }}
         run: |
+          if [ -z "$TOKEN" ]; then echo "no PLATFORM_BUILD_CALLBACK_TOKEN — tokenless build, skipping platform notify"; exit 0; fi
           curl -fsS -X POST "https://platform.hanzo.ai/v1/build-callback" \
             -H "Authorization: Bearer ${TOKEN}" \
             -H "Content-Type: application/json" \
@@ -97,6 +100,7 @@ jobs:
         env:
           TOKEN: ${{ secrets.PLATFORM_BUILD_CALLBACK_TOKEN }}
         run: |
+          if [ -z "$TOKEN" ]; then echo "no PLATFORM_BUILD_CALLBACK_TOKEN — tokenless build, skipping platform notify"; exit 0; fi
           curl -fsS -X POST "https://platform.hanzo.ai/v1/build-callback" \
             -H "Authorization: Bearer ${TOKEN}" \
             -H "Content-Type: application/json" \
