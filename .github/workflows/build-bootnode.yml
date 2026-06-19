@@ -32,6 +32,7 @@ jobs:
         with:
           repository: bootnode/bootnode
           ref: ${{ inputs.ref }}
+          token: ${{ secrets.GH_PAT }}
 
       - uses: docker/setup-buildx-action@v3
 
