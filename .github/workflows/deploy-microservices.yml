@@ -16,7 +16,7 @@ env:
 
 jobs:
   detect-changes:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     outputs:
       gateway: ${{ steps.filter.outputs.gateway }}
       embeddings: ${{ steps.filter.outputs.embeddings }}
@@ -40,7 +40,7 @@ jobs:
   deploy-gateway:
     needs: detect-changes
     if: needs.detect-changes.outputs.gateway == 'true'
-    runs-on: ubuntu-latest
+    runs-on: hanzo-deploy-linux-amd64
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -66,7 +66,7 @@ jobs:
   deploy-embeddings:
     needs: detect-changes
     if: needs.detect-changes.outputs.embeddings == 'true'
-    runs-on: ubuntu-latest
+    runs-on: hanzo-deploy-linux-amd64
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -91,7 +91,7 @@ jobs:
   deploy-store-api:
     needs: detect-changes
     if: needs.detect-changes.outputs.store-api == 'true'
-    runs-on: ubuntu-latest
+    runs-on: hanzo-deploy-linux-amd64
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -116,7 +116,7 @@ jobs:
   deploy-iam:
     needs: detect-changes
     if: needs.detect-changes.outputs.iam == 'true'
-    runs-on: ubuntu-latest
+    runs-on: hanzo-deploy-linux-amd64
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -141,7 +141,7 @@ jobs:
   notify-deployment:
     needs: [deploy-gateway, deploy-embeddings, deploy-store-api, deploy-iam]
     if: always() && (needs.deploy-gateway.result == 'success' || needs.deploy-embeddings.result == 'success' || needs.deploy-store-api.result == 'success' || needs.deploy-iam.result == 'success')
-    runs-on: ubuntu-latest
+    runs-on: hanzo-deploy-linux-amd64
     steps:
     - name: Deployment Summary
       run: |

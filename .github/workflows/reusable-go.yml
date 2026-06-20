@@ -42,7 +42,7 @@ on:
 
 jobs:
   quality:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     defaults:
       run:
         working-directory: ${{ inputs.working-directory }}
@@ -121,7 +121,7 @@ jobs:
         run: exhaustive ./... || true
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     if: inputs.run-tests
     needs: quality
     defaults:
@@ -203,7 +203,7 @@ jobs:
           projectBaseDir: ${{ inputs.working-directory }}
 
   benchmark:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     needs: quality
     defaults:
       run:
@@ -231,7 +231,7 @@ jobs:
           auto-push: true
 
   fuzz:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     needs: quality
     if: github.event_name == 'schedule' || contains(github.event.head_commit.message, '[fuzz]')
     defaults:
@@ -254,7 +254,7 @@ jobs:
           done
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     needs: [quality, test]
     strategy:
       matrix:
@@ -295,7 +295,7 @@ jobs:
           retention-days: 30
 
   docker:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     if: inputs.build-docker
     needs: [build]
     defaults:
