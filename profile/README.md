@@ -71,7 +71,7 @@ hanzo dev
 
 - **Unified binary** (HIP-0106): single Go process mounts iam, kms, base, commerce, ai, gateway, o11y, vfs, mq, dns, amqp, mcp via the `Mount(*zip.App, cloud.Deps) error` contract.
 - **Extension runtimes** (HIP-0105): user code runs in goja (JS), pyvm (Python), wazero (Rust/AS/wasm), starkvm (Starlark policy DSL).
-- **Per-tenant SQLite** (HIP-0302): each org gets its own SQLite file with KMS-derived DEK; replicated to S3 via [replicate](https://github.com/hanzoai/replicate).
+- **Per-tenant SQLite** (HIP-0302): each org gets its own SQLite file with KMS-derived DEK; replicated to S3 via [replicate](https://github.com/hanzoai/replicate). Internal apps use Base; Postgres/Redis/DocDB are PaaS catalog products for customers — see [ARCHITECTURE-DATABASES](./ARCHITECTURE-DATABASES.md).
 - **PCI isolation**: vault is the only L1-audited CDE; payments and commerce are CDE-connected; everything else is out of scope.
 - **White-label**: same binary, different brand at startup. Fork [hanzoai/cloud](https://github.com/hanzoai/cloud) to launch your own ecosystem.
 
