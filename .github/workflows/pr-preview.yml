@@ -255,7 +255,7 @@ jobs:
   e2e:
     if: github.event.action != 'closed' && inputs.e2e-enabled
     needs: [build, deploy]
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
