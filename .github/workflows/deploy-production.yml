@@ -42,7 +42,7 @@ env:
 
 jobs:
   prepare:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     outputs:
       services: ${{ steps.parse.outputs.services }}
       version: ${{ steps.version.outputs.version }}
@@ -74,7 +74,7 @@ jobs:
           echo "previous_version=$PREVIOUS" >> $GITHUB_OUTPUT
 
   validate:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-deploy-linux-amd64
     needs: prepare
     strategy:
       matrix:
@@ -118,7 +118,7 @@ jobs:
           (echo "Image not found" && exit 1)
 
   deploy-blue-green:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-deploy-linux-amd64
     needs: [prepare, validate]
     if: inputs.strategy == 'blue-green' && !inputs.rollback
     strategy:
@@ -198,7 +198,7 @@ jobs:
             --overwrite || true
 
   deploy-canary:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-deploy-linux-amd64
     needs: [prepare, validate]
     if: inputs.strategy == 'canary' && !inputs.rollback
     strategy:
@@ -270,7 +270,7 @@ jobs:
             -p='[{"op": "replace", "path": "/spec/skipAnalysis", "value":true}]'
 
   deploy-rolling:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-deploy-linux-amd64
     needs: [prepare, validate]
     if: inputs.strategy == 'rolling' && !inputs.rollback
     strategy:
@@ -315,7 +315,7 @@ jobs:
           ./scripts/health-check.sh ${{ matrix.service }}
 
   rollback:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-deploy-linux-amd64
     needs: prepare
     if: inputs.rollback
     strategy:
@@ -364,7 +364,7 @@ jobs:
           ./scripts/health-check.sh ${{ matrix.service }}
 
   post-deploy:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-deploy-linux-amd64
     needs: [deploy-blue-green, deploy-canary, deploy-rolling]
     if: always() && !inputs.rollback
     steps:

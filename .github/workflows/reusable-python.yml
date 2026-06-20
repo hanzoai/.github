@@ -55,7 +55,7 @@ on:
 
 jobs:
   quality:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     defaults:
       run:
         working-directory: ${{ inputs.working-directory }}
@@ -122,7 +122,7 @@ jobs:
           retention-days: 30
 
   test:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     if: inputs.run-tests
     needs: quality
     defaults:
@@ -231,7 +231,7 @@ jobs:
           projectBaseDir: ${{ inputs.working-directory }}
 
   benchmark:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     if: inputs.run-tests
     needs: quality
     defaults:
@@ -274,7 +274,7 @@ jobs:
           auto-push: true
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     if: inputs.build-docker
     needs: [quality, test]
     outputs:

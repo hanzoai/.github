@@ -15,7 +15,7 @@ env:
 jobs:
   # Detect which projects have changes
   detect-changes:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     outputs:
       python: ${{ steps.filter.outputs.python }}
       typescript: ${{ steps.filter.outputs.typescript }}
@@ -283,7 +283,7 @@ jobs:
 
   # Security scanning
   security-scan:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     if: github.event_name == 'schedule' || github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
@@ -307,7 +307,7 @@ jobs:
 
   # Dependency updates check
   dependency-check:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     if: github.event_name == 'schedule'
     steps:
       - uses: actions/checkout@v4
@@ -334,7 +334,7 @@ jobs:
 
   # Summary and notifications
   summary:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     if: always()
     needs: [
       llm-gateway, agent-sdk, python-sdk, jin, az2, operative,

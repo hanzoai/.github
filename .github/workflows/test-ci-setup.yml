@@ -40,7 +40,7 @@ jobs:
       use-luxfi: true
 
   validate-scripts:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     steps:
       - uses: actions/checkout@v4
 
@@ -63,7 +63,7 @@ jobs:
           done
 
   validate-workflows:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     steps:
       - uses: actions/checkout@v4
 
@@ -79,7 +79,7 @@ jobs:
           done
 
   summary:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     needs: [test-python-workflow, test-typescript-workflow, test-go-workflow, validate-scripts, validate-workflows]
     if: always()
     steps:
