@@ -20,7 +20,7 @@ env:
 
 jobs:
   detect-changes:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     outputs:
       services: ${{ steps.filter.outputs.changes }}
     steps:
@@ -43,7 +43,7 @@ jobs:
   build-and-push:
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.services != '[]' }}
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     strategy:
       matrix:
         service: ${{ fromJson(needs.detect-changes.outputs.services) }}
@@ -89,7 +89,7 @@ jobs:
   deploy:
     needs: [detect-changes, build-and-push]
     if: ${{ needs.detect-changes.outputs.services != '[]' }}
-    runs-on: ubuntu-latest
+    runs-on: hanzo-deploy-linux-amd64
     steps:
       - uses: actions/checkout@v4
       
@@ -139,7 +139,7 @@ jobs:
   notify:
     needs: [deploy]
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     steps:
       - name: Send notification
         uses: 8398a7/action-slack@v3
