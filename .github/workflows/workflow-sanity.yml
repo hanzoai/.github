@@ -27,7 +27,7 @@ on:
 
 jobs:
   no-tabs:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     steps:
       - uses: actions/checkout@v4
 
@@ -49,7 +49,7 @@ jobs:
           PY
 
   no-github-hosted-runners:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     steps:
       - uses: actions/checkout@v4
 
@@ -80,7 +80,7 @@ jobs:
           PY
 
   no-stale-runner-labels:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     steps:
       - uses: actions/checkout@v4
 
@@ -109,7 +109,7 @@ jobs:
           PY
 
   no-bespoke-docker-build:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     steps:
       - uses: actions/checkout@v4
 
@@ -139,7 +139,7 @@ jobs:
           PY
 
   docker-workflow-uses-canonical:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     steps:
       - uses: actions/checkout@v4
 
@@ -178,7 +178,7 @@ jobs:
           PY
 
   actionlint:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     steps:
       - uses: actions/checkout@v4
 
