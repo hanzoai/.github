@@ -21,7 +21,7 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     # Timeout to prevent billing issues
     timeout-minutes: 15
     steps:
@@ -56,7 +56,7 @@ jobs:
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+    runs-on: hanzo-deploy-linux-amd64
     needs: build
     # Timeout to prevent billing issues
     timeout-minutes: 10

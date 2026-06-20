@@ -23,7 +23,7 @@ on:
 
 jobs:
   prepare-release:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     outputs:
       new_version: ${{ steps.version.outputs.new_version }}
       changelog: ${{ steps.changelog.outputs.changelog }}
@@ -130,7 +130,7 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
   test-release:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     needs: prepare-release
     strategy:
       matrix:
@@ -147,7 +147,7 @@ jobs:
           fi
 
   create-release:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     needs: [prepare-release, test-release]
     steps:
       - uses: actions/checkout@v4
@@ -217,7 +217,7 @@ jobs:
           generate_release_notes: true
 
   publish-packages:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     needs: create-release
     strategy:
       matrix:
@@ -276,7 +276,7 @@ jobs:
           esac
 
   build-docker-images:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     needs: [prepare-release, create-release]
     strategy:
       matrix:
@@ -316,7 +316,7 @@ jobs:
             VCS_REF=${{ github.sha }}
 
   update-documentation:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     needs: [prepare-release, create-release]
     steps:
       - uses: actions/checkout@v4
@@ -339,7 +339,7 @@ jobs:
           # Add actual deployment commands here
 
   notify:
-    runs-on: ubuntu-latest
+    runs-on: hanzo-build-linux-amd64
     needs: [create-release, publish-packages, build-docker-images]
     if: always()
     steps:
