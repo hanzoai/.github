@@ -8,7 +8,7 @@
 #
 #   brand-check.sh <org> [<base-ref>]
 #
-#     <org>      one of: lux, hanzo, zoo, pars, liquidity
+#     <org>      one of: lux, hanzo, zoo, pars
 #     <base-ref> optional. Defaults to the merge-base with origin/main,
 #                falling back to HEAD~ if no remote. Pass "all" to scan
 #                the whole working tree (equivalent to `git ls-files`).
@@ -30,7 +30,7 @@ BASE_REF="${2:-}"
 
 if [ -z "${ORG}" ]; then
     echo "usage: brand-check.sh <org> [<base-ref>]" >&2
-    echo "       <org> one of: lux hanzo zoo pars liquidity" >&2
+    echo "       <org> one of: lux hanzo zoo pars" >&2
     exit 2
 fi
 
