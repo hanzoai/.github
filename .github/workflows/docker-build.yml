@@ -32,8 +32,8 @@ name: Docker Build & Push (Reusable)
 #
 # ─── Registry support ────────────────────────────────────────────────
 # registry=ghcr.io  (default) → GITHUB_TOKEN login for hanzoai/luxfi/zooai
-# registry=us-docker.pkg.dev   → GCP SA JSON in secrets.GCP_CREDENTIAL for partner
-#                               (org secret on partner org; pass secrets: inherit)
+# registry=us-docker.pkg.dev   → GCP SA JSON in secrets.GCP_CREDENTIAL for the GCP-registry org
+#                               (org secret on that GCP org; pass secrets: inherit)
 #
 # ─── Multi-image repos ───────────────────────────────────────────────
 # Callers with more than one image fan-out via their own matrix:
@@ -181,7 +181,7 @@ on:
     #
     # Omitting the `secrets:` block lets `secrets: inherit` flow every
     # caller-accessible secret transparently. `${{ secrets.GCP_CREDENTIAL }}`
-    # below still resolves where the caller has it (partner org
+    # below still resolves where the caller has it (the GCP-registry org
     # secret), and evaluates to empty string elsewhere. The GAR login
     # step already gates on `inputs.registry == 'us-docker.pkg.dev'`,
     # so empty GCP_CREDENTIAL on a ghcr.io push has no effect.
