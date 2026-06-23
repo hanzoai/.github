@@ -71,7 +71,7 @@ on:
   workflow_call:
     inputs:
       image:
-        description: "Full image name (e.g. ghcr.io/hanzoai/bot, us-docker.pkg.dev/liquidity-registry/partner/mpc)"
+        description: "Full image name (e.g. ghcr.io/hanzoai/bot, us-docker.pkg.dev/<gcp-project>/<org>/<image>)"
         required: true
         type: string
       registry:
