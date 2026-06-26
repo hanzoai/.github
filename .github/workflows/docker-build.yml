@@ -166,25 +166,24 @@ on:
         description: "Final manifest tags (JSON)"
         value: ${{ jobs.create-manifest.outputs.tags }}
 
-    # NO explicit `secrets:` block. The previous version declared
-    # GCP_CREDENTIAL here on the theory that explicit declarations were
-    # required for cross-org `secrets: inherit`. Empirically the opposite
-    # is true: every cross-org caller (luxfi/operator, luxfi/devops,
-    # luxfi/faucet, luxfi/dex, luxfi/docs, luxfi/market, luxfi/netrunner,
-    # luxfi/chat, …) has been emitting `startup_failure` after 0–2s with
-    # no jobs dispatched since 2026-04-24. Cause: when a reusable
-    # workflow declares a `secrets:` block, GitHub validates the caller's
-    # secret visibility against THAT specific list at startup. For
-    # cross-org callers without `GCP_CREDENTIAL` defined in their org or
-    # repo, the validation fails and the workflow is rejected before
-    # any job runs.
-    #
-    # Omitting the `secrets:` block lets `secrets: inherit` flow every
-    # caller-accessible secret transparently. `${{ secrets.GCP_CREDENTIAL }}`
-    # below still resolves where the caller has it (the GCP-registry org
-    # secret), and evaluates to empty string elsewhere. The GAR login
-    # step already gates on `inputs.registry == 'us-docker.pkg.dev'`,
-    # so empty GCP_CREDENTIAL on a ghcr.io push has no effect.
+    # Secrets a reusable workflow REFERENCES must be DECLARED here, or
+    # GitHub rejects it at parse time with
+    #   422 failed to parse workflow: error parsing called workflow
+    # for every caller that doesn't pass them explicitly — which killed
+    # docker-build org-wide at 0s (the `${{ secrets.GCP_CREDENTIAL }}` /
+    # `${{ secrets.GH_PAT }}` references below were undeclared). Declaring
+    # them `required: false` is the canonical fix: the parser is satisfied,
+    # AND cross-org callers that lack the secret still pass validation (it
+    # resolves to empty where absent — the GAR login step gates on
+    # inputs.registry, and gh_token falls back to GITHUB_TOKEN). `secrets:
+    # inherit` continues to flow the real values where the caller has them.
+    secrets:
+      GCP_CREDENTIAL:
+        description: "GCP SA JSON for us-docker.pkg.dev pushes. Optional — only the GCP-registry org provides it; empty elsewhere."
+        required: false
+      GH_PAT:
+        description: "GitHub PAT for private deps during build. Optional — falls back to GITHUB_TOKEN."
+        required: false
 
 jobs:
   # ── amd64 (native arcd runner — evo matches [self-hosted, linux, amd64]) ──
