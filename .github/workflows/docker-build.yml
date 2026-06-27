@@ -154,6 +154,10 @@ on:
         description: "Runner labels for deploy jobs as JSON-array string. Defaults to canonical arcd labels. Decoded via fromJson at runs-on."
         default: '["self-hosted","linux","amd64"]'
         type: string
+      sbom:
+        description: "Generate a Software Bill of Materials (syft → SPDX + CycloneDX) for the pushed image, upload it as a workflow artifact, and attach it to the image in the registry (cosign). Powers OSS revenue-share attribution (deployed image → components → contributors). Non-blocking; set false to skip."
+        default: true
+        type: boolean
 
     outputs:
       amd64-digest:
@@ -652,3 +656,119 @@ jobs:
           echo "ERROR: Timed out after ${TIMEOUT_SECS}s waiting for ${NAMESPACE}/${DEPLOYMENT}"
           kubectl -n "${NAMESPACE}" get deploy "${DEPLOYMENT}" -o yaml || true
           exit 1
+
+  # ── SBOM (Software Bill of Materials) ────────────────────────
+  #
+  # Generates SPDX + CycloneDX SBOMs from the just-pushed image and
+  # publishes them two ways so OSS revenue-share attribution
+  # (hanzoai/commerce contributor payouts) can map a deployed image →
+  # its components → contributors:
+  #   1. workflow artifact  — always retrievable via the GitHub API
+  #   2. OCI artifact attached to the image digest via cosign —
+  #      retrievable by digest with `cosign download sbom <ref>`
+  #
+  # Runs after the manifest/tag jobs (so the image exists in the
+  # registry) but is independent of deploy and best-effort: it is NOT
+  # in deploy's `needs`, and its publish steps are continue-on-error,
+  # so an SBOM hiccup can never block a release.
+  #
+  sbom:
+    if: >-
+      always() &&
+      inputs.push && inputs.sbom &&
+      (needs.create-manifest.result == 'success' || needs.tag-single-arch.result == 'success')
+    runs-on: ${{ fromJson(inputs.runner-amd64) }}
+    needs: [create-manifest, tag-single-arch]
+    permissions:
+      packages: write
+      contents: read
+      id-token: write
+    steps:
+      - name: Reset Docker credential store (runner hygiene)
+        run: |
+          mkdir -p "$HOME/.docker"
+          printf '{}' > "$HOME/.docker/config.json"
+
+      - name: Login to GHCR
+        if: inputs.registry == 'ghcr.io'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to GAR
+        if: inputs.registry == 'us-docker.pkg.dev'
+        uses: docker/login-action@v3
+        with:
+          registry: us-docker.pkg.dev
+          username: _json_key
+          password: ${{ secrets.GCP_CREDENTIAL }}
+
+      - name: Install syft, cosign, crane
+        run: |
+          set -euo pipefail
+          BIN="${HOME}/.local/bin"; mkdir -p "${BIN}"; echo "${BIN}" >> "$GITHUB_PATH"
+          if ! command -v syft >/dev/null 2>&1; then
+            curl -fsSL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b "${BIN}"
+          fi
+          if ! command -v cosign >/dev/null 2>&1; then
+            COSIGN_VER="v2.4.1"
+            OS="$(uname -s | tr '[:upper:]' '[:lower:]')"; ARCH="$(uname -m)"
+            case "${ARCH}" in x86_64) ARCH=amd64;; aarch64|arm64) ARCH=arm64;; esac
+            curl -fsSL "https://github.com/sigstore/cosign/releases/download/${COSIGN_VER}/cosign-${OS}-${ARCH}" -o "${BIN}/cosign"
+            chmod +x "${BIN}/cosign"
+          fi
+          if ! command -v crane >/dev/null 2>&1; then
+            CRANE_VER="v0.20.2"
+            OS="$(uname -s)"; ARCH="$(uname -m)"
+            case "${ARCH}" in x86_64) ARCH=x86_64;; aarch64|arm64) ARCH=arm64;; esac
+            curl -fsSL "https://github.com/google/go-containerregistry/releases/download/${CRANE_VER}/go-containerregistry_${OS}_${ARCH}.tar.gz" | tar xz -C "${BIN}" crane
+          fi
+          syft version; cosign version; crane version
+
+      - name: Resolve image reference
+        id: ref
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ inputs.image }}
+          flavor: |
+            latest=auto
+          tags: |
+            type=semver,pattern={{version}}
+            type=sha,prefix=sha-
+
+      - name: Generate SBOM (SPDX + CycloneDX)
+        run: |
+          set -euo pipefail
+          IMAGE="${{ inputs.image }}"
+          TAG_REF="$(jq -r '.tags[0]' <<< "$DOCKER_METADATA_OUTPUT_JSON")"
+          if [ -z "${TAG_REF}" ] || [ "${TAG_REF}" = "null" ]; then
+            echo "No image tag resolved; nothing to SBOM."; exit 0
+          fi
+          DIGEST="$(crane digest "${TAG_REF}")"
+          REF="${IMAGE}@${DIGEST}"
+          echo "SBOM target: ${REF}"
+          # Pin the digest into the env for downstream steps.
+          echo "SBOM_REF=${REF}" >> "$GITHUB_ENV"
+          syft "${REF}" -o spdx-json=sbom.spdx.json -o cyclonedx-json=sbom.cdx.json
+          echo "components: $(jq '.packages | length' sbom.spdx.json 2>/dev/null || echo '?')"
+        env:
+          DOCKER_METADATA_OUTPUT_JSON: ${{ steps.ref.outputs.json }}
+
+      - name: Upload SBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ github.sha }}
+          path: |
+            sbom.spdx.json
+            sbom.cdx.json
+          if-no-files-found: warn
+
+      - name: Attach SBOM to image (best-effort)
+        if: env.SBOM_REF != ''
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          cosign attach sbom --sbom sbom.spdx.json --type spdx "${SBOM_REF}"
+          echo "Attached SBOM to ${SBOM_REF}"
