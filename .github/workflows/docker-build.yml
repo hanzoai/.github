@@ -672,6 +672,11 @@ jobs:
   # so an SBOM hiccup can never block a release.
   #
   sbom:
+    # Documented intent: an SBOM hiccup (e.g. transient syft install failure on a
+    # self-hosted runner) must NEVER fail a release — deploy does not `need` sbom.
+    # continue-on-error makes the job's own failure non-fatal to the run, matching
+    # that intent (previously a syft error red-flagged builds whose image published).
+    continue-on-error: true
     if: >-
       always() &&
       inputs.push && inputs.sbom &&
