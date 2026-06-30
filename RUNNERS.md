@@ -16,7 +16,7 @@ Two hosts run two personalities each — one arcd per OS:
 | **dbc-linux** | **Linux arm64** | colima profile `arcd` (vz + Rosetta, 4cpu/8GB) | Ubuntu 24.04 in VM | `arcd.service` (systemd, in-VM) | `dbc:7777` inside VM |
 | **evo** WSL | **Linux amd64** | WSL2 on Windows host | Ubuntu | `arcd.service` (systemd) | `evo:7777` |
 | **evo** Windows | **Windows amd64** (Tauri `.msi`/`.exe`, Authenticode) | native | Windows | Scheduled Task `arcd` (AtLogOn, RestartCount=999) | `evo:7778` |
-| **spark** (Ampere) | **Linux arm64** | native | Ubuntu | `arcd.service` (systemd) | `spark:7777` |
+| **spark** (GB10 Grace-Blackwell) | **Linux arm64** | native | Ubuntu | `arcd.service` (systemd) | `spark:7777` |
 
 **Dual-personality hosts**: dbc serves both macOS (host) AND Linux arm64 (via colima VM). evo serves both Windows (native) AND Linux amd64 (via WSL2). Each personality is a separate arcd process with a distinct GitHub-reported OS, port, and config file — no conflict because they spawn different `actions-runner` binaries (`.exe` for Windows, ELF for Linux, Mach-O for macOS).
 
