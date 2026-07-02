@@ -189,6 +189,17 @@ on:
         description: "GitHub PAT for private deps during build. Optional — falls back to GITHUB_TOKEN."
         required: false
 
+# ── Build hygiene ────────────────────────────────────────────────
+# docker/build-push-action@v6 uploads a build-record/summary artifact by
+# default. When the org's Actions artifact-storage quota is full that upload
+# fails with "CreateArtifact: Artifact storage quota has been hit" and fails
+# the whole Build-and-push step — silently blocking ALL image publishing.
+# The build record is non-essential telemetry; the image push is what matters.
+# Disable it so a full artifact quota can never wedge releases again.
+env:
+  DOCKER_BUILD_SUMMARY: "false"
+  DOCKER_BUILD_RECORD_UPLOAD: "false"
+
 jobs:
   # ── amd64 (native arcd runner — evo matches [self-hosted, linux, amd64]) ──
   build-amd64:
