@@ -226,7 +226,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
 
       - name: Login to GAR
         if: inputs.registry == 'us-docker.pkg.dev'
@@ -322,7 +322,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
 
       - name: Login to GAR
         if: inputs.registry == 'us-docker.pkg.dev'
@@ -428,7 +428,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
 
       - name: Login to GAR
         if: inputs.registry == 'us-docker.pkg.dev'
@@ -538,7 +538,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
 
       - name: Login to GAR
         if: inputs.registry == 'us-docker.pkg.dev'
@@ -699,7 +699,7 @@ jobs:
         with:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
 
       - name: Login to GAR
         if: inputs.registry == 'us-docker.pkg.dev'
