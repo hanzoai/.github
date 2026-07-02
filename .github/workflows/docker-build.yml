@@ -291,11 +291,15 @@ jobs:
           cache-to: type=gha,scope=${{ inputs.image }}-amd64,mode=max
           provenance: false
           push: ${{ inputs.push }}
-          # Private cross-repo Go modules (hanzoai/*, luxfi/*): expose the org
-          # PAT as a BuildKit secret. Dockerfiles that need it consume via
-          # `RUN --mount=type=secret,id=gh_token`; others ignore it (no-op).
+          # Private cross-repo deps (hanzoai/*, luxfi/*): expose the org PAT as
+          # BuildKit secrets in the two shapes Dockerfiles consume — a raw token
+          # (id=gh_token, e.g. Go module url.insteadOf auth) and a ready-made
+          # ~/.netrc line (id=netrc, e.g. plain `git clone`/curl over HTTPS).
+          # Both derive from ONE source token; a Dockerfile that mounts neither
+          # id ignores both (no-op — additive, safe for every sibling repo).
           secrets: |
             gh_token=${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+            netrc=machine github.com login x-access-token password ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
 
   # ── arm64 (native arcd runner — spark matches [self-hosted, linux, arm64]) ──
   build-arm64:
@@ -383,11 +387,15 @@ jobs:
           cache-to: type=gha,scope=${{ inputs.image }}-arm64,mode=max
           provenance: false
           push: ${{ inputs.push }}
-          # Private cross-repo Go modules (hanzoai/*, luxfi/*): expose the org
-          # PAT as a BuildKit secret. Dockerfiles that need it consume via
-          # `RUN --mount=type=secret,id=gh_token`; others ignore it (no-op).
+          # Private cross-repo deps (hanzoai/*, luxfi/*): expose the org PAT as
+          # BuildKit secrets in the two shapes Dockerfiles consume — a raw token
+          # (id=gh_token, e.g. Go module url.insteadOf auth) and a ready-made
+          # ~/.netrc line (id=netrc, e.g. plain `git clone`/curl over HTTPS).
+          # Both derive from ONE source token; a Dockerfile that mounts neither
+          # id ignores both (no-op — additive, safe for every sibling repo).
           secrets: |
             gh_token=${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+            netrc=machine github.com login x-access-token password ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
 
   # ── Multi-platform manifest (both platforms) ─────────────────
   #
