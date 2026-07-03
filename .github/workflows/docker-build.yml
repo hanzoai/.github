@@ -19,7 +19,7 @@ name: Docker Build & Push (Reusable)
 # Native runners only — NO GitHub-hosted runners, period.
 #
 # Canonical native arcd labels (every arcd host registers with these):
-#   amd64 jobs : [self-hosted, linux, amd64]   (matches evo)
+#   amd64 jobs : [self-hosted, linux, amd64]   (online DOKS ARC scale-set)
 #   arm64 jobs : [self-hosted, linux, arm64]   (matches spark)
 #   macOS jobs : [self-hosted, macos]          (matches dbc)
 #
@@ -143,8 +143,8 @@ on:
         default: ""
         type: string
       runner-amd64:
-        description: "Runner labels for amd64 builds as JSON-array string. Defaults to canonical arcd labels (matches evo). Decoded via fromJson at runs-on."
-        default: '["self-hosted","linux","amd64"]'
+        description: "Runner labels for amd64 builds as JSON-array string. Defaults to canonical arcd labels (online DOKS ARC scale-set). Decoded via fromJson at runs-on."
+        default: '["hanzo-build-linux-amd64"]'
         type: string
       runner-arm64:
         description: "Runner labels for arm64 builds as JSON-array string. Defaults to canonical arcd labels (matches spark). Decoded via fromJson at runs-on."
@@ -152,7 +152,7 @@ on:
         type: string
       runner-deploy:
         description: "Runner labels for deploy jobs as JSON-array string. Defaults to canonical arcd labels. Decoded via fromJson at runs-on."
-        default: '["self-hosted","linux","amd64"]'
+        default: '["hanzo-build-linux-amd64"]'
         type: string
       sbom:
         description: "Generate a Software Bill of Materials (syft → SPDX + CycloneDX) for the pushed image, upload it as a workflow artifact, and attach it to the image in the registry (cosign). Powers OSS revenue-share attribution (deployed image → components → contributors). Non-blocking; set false to skip."
