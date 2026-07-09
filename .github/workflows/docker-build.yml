@@ -712,7 +712,12 @@ jobs:
       - name: Install syft, cosign, crane
         run: |
           set -euo pipefail
-          BIN="${HOME}/.local/bin"; mkdir -p "${BIN}"; echo "${BIN}" >> "$GITHUB_PATH"
+          BIN="${HOME}/.local/bin"; mkdir -p "${BIN}"
+          # $GITHUB_PATH only affects LATER steps; export for THIS step too so the
+          # verify below (and any same-step tool use) resolves freshly-installed
+          # binaries — otherwise `syft version` fails 127 on a runner that lacks a
+          # preinstalled syft (the SBOM job's real failure mode).
+          echo "${BIN}" >> "$GITHUB_PATH"; export PATH="${BIN}:${PATH}"
           if ! command -v syft >/dev/null 2>&1; then
             curl -fsSL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b "${BIN}"
           fi
