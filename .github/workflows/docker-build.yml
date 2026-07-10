@@ -188,12 +188,6 @@ on:
       GH_PAT:
         description: "GitHub PAT for private deps during build. Optional — falls back to GITHUB_TOKEN."
         required: false
-      HANZO_CI_CLIENT_ID:
-        description: "Admin-org CI OAuth app client_id (client_credentials) for automated SBOM ingest → api.hanzo.ai/v1/sbom. Optional; absent ⇒ ingest is skipped. Sourced from KMS."
-        required: false
-      HANZO_CI_CLIENT_SECRET:
-        description: "Admin-org CI OAuth app client_secret paired with HANZO_CI_CLIENT_ID. Optional; absent ⇒ ingest skipped. Sourced from KMS, never hardcoded."
-        required: false
 
 # ── Build hygiene ────────────────────────────────────────────────
 # docker/build-push-action@v6 uploads a build-record/summary artifact by
@@ -807,53 +801,9 @@ jobs:
           cosign attach sbom --sbom sbom.spdx.json --type spdx "${SBOM_REF}"
           echo "Attached SBOM to ${SBOM_REF}"
 
-      # ── Ingest into the Hanzo SBOM datastore (best-effort) ───────
-      # POST the CycloneDX SBOM to api.hanzo.ai/v1/sbom so a deployed image
-      # digest maps → components → contributors (OSS revenue-share attribution,
-      # console SBOM panel). Authenticates as the admin-org CI OAuth app
-      # (client_credentials → hanzo.id token → gateway resolves IsAdmin, which
-      # POST /v1/sbom requires). Fail-open + fail-safe: skipped when the CI app
-      # creds are absent, continue-on-error so an ingest hiccup never reds a
-      # release (the datastore ingest is downstream telemetry, not the release).
-      - name: Ingest SBOM into datastore (best-effort)
-        if: env.SBOM_REF != ''
-        continue-on-error: true
-        env:
-          HANZO_CI_CLIENT_ID: ${{ secrets.HANZO_CI_CLIENT_ID }}
-          HANZO_CI_CLIENT_SECRET: ${{ secrets.HANZO_CI_CLIENT_SECRET }}
-          IAM_TOKEN_URL: "https://hanzo.id/v1/iam/oauth/token"
-          SBOM_INGEST_URL: "https://api.hanzo.ai/v1/sbom"
-        run: |
-          set -euo pipefail
-          if [ -z "${HANZO_CI_CLIENT_ID}" ] || [ -z "${HANZO_CI_CLIENT_SECRET}" ]; then
-            echo "SBOM ingest: admin-org CI app creds not provisioned (HANZO_CI_CLIENT_ID/SECRET); skipping (non-fatal)."; exit 0
-          fi
-          if [ ! -s sbom.cdx.json ]; then
-            echo "No CycloneDX SBOM to ingest; skipping."; exit 0
-          fi
-          # 1) admin-org token via client_credentials (creds are KMS-sourced org secrets)
-          TOKEN="$(curl -fsSL -X POST "${IAM_TOKEN_URL}" \
-            -d grant_type=client_credentials \
-            -d client_id="${HANZO_CI_CLIENT_ID}" \
-            -d client_secret="${HANZO_CI_CLIENT_SECRET}" \
-            | jq -r '.access_token // empty')"
-          if [ -z "${TOKEN}" ]; then
-            echo "::warning::SBOM ingest: no access_token from IAM (client_credentials); skipping."; exit 0
-          fi
-          # 2) SbomIngest envelope: image identity + the raw CycloneDX document
-          DIGEST="${SBOM_REF##*@}"
-          jq -n \
-            --arg digest "${DIGEST}" \
-            --arg ref    "${SBOM_REF}" \
-            --arg repo   "${GITHUB_REPOSITORY}" \
-            --arg sha    "${GITHUB_SHA}" \
-            --slurpfile doc sbom.cdx.json \
-            '{imageDigest:$digest, imageRef:$ref, sourceRepo:$repo, gitSha:$sha, format:"cyclonedx", document:$doc[0]}' \
-            > sbom.ingest.json
-          # 3) POST to the datastore (org-scoped, admin-gated)
-          CODE="$(curl -sS -o /dev/null -w '%{http_code}' -X POST "${SBOM_INGEST_URL}" \
-            -H "Authorization: Bearer ${TOKEN}" \
-            -H "Content-Type: application/json" \
-            --data-binary @sbom.ingest.json)"
-          echo "SBOM ingest → ${SBOM_INGEST_URL} : HTTP ${CODE} (digest ${DIGEST})"
-          case "${CODE}" in 2*) echo "ingested ✓";; *) echo "::warning::SBOM ingest returned HTTP ${CODE} (non-fatal)";; esac
+      # Datastore ingest is NOT a CI concern. CI produces the SBOM and attaches
+      # it to the image digest (cosign, above); the registry is the source of
+      # truth. The cloud SBOM subsystem — already admin, owns the datastore,
+      # knows deployed digests — pulls the attached SBOM from the registry and
+      # materializes components. The producer attaches; the consumer pulls. No
+      # CI credential, no admin token, no per-repo secret, no env plumbing.
