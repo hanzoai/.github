@@ -1,0 +1,450 @@
+name: Pre-Promote E2E Gate (Reusable)
+
+# THE one sanctioned way to bump a PRODUCTION operator CR image tag.
+#
+# Today an already-built image reaches prod two ways, NEITHER of which tests it:
+#   1. `.platform.yml` → platform.hanzo.ai → the Rust operator bumps the CR
+#      `image.tag` in hanzo/universe/infra/k8s/operator/crs/<svc>.yaml
+#   2. a human hand-edits that CR
+# This workflow inserts a MANDATORY staging deploy + Playwright E2E between
+# "image built" and "CR tag bumped". Fail-closed: ANY failure = NO promotion.
+# The ONLY thing that writes the prod CR here is the `promote` job, and it runs
+# iff `stage` (staging rollout) AND `e2e` both passed.
+#
+# It catches what a rolling prod deploy cannot: a `strategy: Recreate` service
+# whose new image never becomes Ready dies silently under maxUnavailable, but
+# here the throwaway staging rollout simply never completes → the gate blocks.
+#
+# Usage — call it AFTER your build, feeding it the freshly-built semver tag:
+#
+#   jobs:
+#     build:
+#       uses: hanzoai/.github/.github/workflows/docker-build.yml@main
+#       with:
+#         image: ghcr.io/hanzoai/iam
+#       secrets: inherit
+#
+#     promote:
+#       needs: build
+#       uses: hanzoai/.github/.github/workflows/promote.yml@main
+#       with:
+#         service: iam                     # → namespace + crs/<service>.yaml
+#         image: ghcr.io/hanzoai/iam       # GHCR ref WITHOUT the tag
+#         tag: ${{ needs.build.outputs.version }}   # semver, no leading v
+#         port: "8000"
+#         health-path: /
+#       secrets: inherit
+#
+# Hand-editing a prod CR tag is DEPRECATED — see docs/PROMOTE_GATE.md.
+
+on:
+  workflow_call:
+    inputs:
+      service:
+        description: "Service name — used for the staging namespace and the CR filename (crs/<service>.yaml)."
+        required: true
+        type: string
+      image:
+        description: "Full GHCR image ref WITHOUT a tag, e.g. ghcr.io/hanzoai/iam."
+        required: true
+        type: string
+      tag:
+        description: "Candidate image tag to gate + promote (semver, no leading v). Used verbatim — never rewritten."
+        required: true
+        type: string
+      port:
+        description: "Container port the service listens on."
+        default: "3000"
+        type: string
+      health-path:
+        description: "HTTP path used for the readinessProbe and the smoke floor."
+        default: "/"
+        type: string
+      e2e-dir:
+        description: "Directory in the CALLER repo holding playwright.config.* + tests."
+        default: "."
+        type: string
+      crs-repo:
+        description: "Repo holding the operator CRs to promote into."
+        default: "hanzoai/universe"
+        type: string
+      crs-path:
+        description: "Path within crs-repo to the CR directory."
+        default: "infra/k8s/operator/crs"
+        type: string
+      e2e-enabled:
+        description: "Run the E2E stage. When false, promotion STILL requires a green staging rollout."
+        default: true
+        type: boolean
+      kube-context:
+        description: "Optional kubectl context (do-sfo3-hanzo-k8s has same-named decoys on lux-k8s runners). Empty = runner default."
+        default: ""
+        type: string
+
+    # required:false so cross-org callers that never define GH_PAT don't trip the
+    # org-wide 422 — the jobs fall back to GITHUB_TOKEN. Same fix as pr-preview.yml.
+    # NB: cross-repo promotion (crs-repo != caller repo) REQUIRES GH_PAT; the
+    # default GITHUB_TOKEN cannot push to another repository.
+    secrets:
+      GH_PAT:
+        description: "GitHub PAT for GHCR pulls + the cross-repo gitops commit. Optional — falls back to GITHUB_TOKEN."
+        required: false
+
+# Serialize promotes of the SAME service so two concurrent runs never race the
+# git push to main. Distinct services promote in parallel; staging namespaces are
+# already run_id-unique so they never collide.
+concurrency:
+  group: promote-${{ inputs.service }}
+  cancel-in-progress: false
+
+# Every run step below uses bash-isms (arrays for the kubectl context flag,
+# process substitution for the numstat guardrail). Pin bash so it never
+# degrades to sh on a self-hosted runner.
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # ── 1. STAGE — deploy image:tag into a throwaway namespace ───────────────
+  # Broken/unpullable/never-Ready image ⇒ rollout status times out ⇒ this job
+  # FAILS ⇒ the gate blocks. This is the first fail-closed guard.
+  stage:
+    runs-on: [self-hosted, linux, amd64]
+    timeout-minutes: 15
+    env:
+      SERVICE: ${{ inputs.service }}
+      IMAGE: ${{ inputs.image }}:${{ inputs.tag }}
+      PORT: ${{ inputs.port }}
+      HEALTH: ${{ inputs.health-path }}
+      RUN_ID: ${{ github.run_id }}
+      KUBE_CONTEXT: ${{ inputs.kube-context }}
+    steps:
+      - name: Deploy to staging namespace
+        run: |
+          set -euo pipefail
+          CTX=(); [ -n "${KUBE_CONTEXT}" ] && CTX=(--context="${KUBE_CONTEXT}")
+          NS="staging-${SERVICE}-${RUN_ID}"
+          echo "Staging ${IMAGE} in ns ${NS}"
+
+          kubectl "${CTX[@]}" create namespace "${NS}" --dry-run=client -o yaml | kubectl "${CTX[@]}" apply -f -
+          kubectl "${CTX[@]}" label namespace "${NS}" \
+            staging=true service="${SERVICE}" run-id="${RUN_ID}" --overwrite
+
+          # Best-effort copy of the GHCR pull secret so PRIVATE images actually
+          # pull. Tool-free (jsonpath only). If none is found we warn and press
+          # on — a genuinely un-pullable image then fails the rollout (safe).
+          for SRC in ghcr-pull-secret ghcr-secret; do
+            CFG="$(kubectl "${CTX[@]}" -n hanzo get secret "${SRC}" \
+                   -o jsonpath='{.data.\.dockerconfigjson}' 2>/dev/null || true)"
+            if [ -n "${CFG}" ]; then
+              kubectl "${CTX[@]}" -n "${NS}" create secret generic ghcr-pull-secret \
+                --type=kubernetes.io/dockerconfigjson \
+                --from-literal=.dockerconfigjson="$(printf '%s' "${CFG}" | base64 -d)" \
+                --dry-run=client -o yaml | kubectl "${CTX[@]}" -n "${NS}" apply -f -
+              echo "Copied pull secret from hanzo/${SRC}"
+              break
+            fi
+          done
+
+          kubectl "${CTX[@]}" apply -n "${NS}" -f - <<EOF
+          apiVersion: apps/v1
+          kind: Deployment
+          metadata:
+            name: ${SERVICE}
+            labels: { app: ${SERVICE}, staging: "true" }
+          spec:
+            replicas: 1
+            selector:
+              matchLabels: { app: ${SERVICE} }
+            template:
+              metadata:
+                labels: { app: ${SERVICE} }
+              spec:
+                imagePullSecrets:
+                - name: ghcr-pull-secret
+                containers:
+                - name: ${SERVICE}
+                  image: ${IMAGE}
+                  imagePullPolicy: IfNotPresent
+                  ports:
+                  - containerPort: ${PORT}
+                  readinessProbe:
+                    httpGet:
+                      path: ${HEALTH}
+                      port: ${PORT}
+                    initialDelaySeconds: 5
+                    periodSeconds: 5
+                    timeoutSeconds: 3
+                    failureThreshold: 12
+                  resources:
+                    requests: { memory: 128Mi, cpu: 100m }
+                    limits:   { memory: 512Mi, cpu: 500m }
+          ---
+          apiVersion: v1
+          kind: Service
+          metadata:
+            name: ${SERVICE}
+          spec:
+            selector: { app: ${SERVICE} }
+            ports:
+            - port: ${PORT}
+              targetPort: ${PORT}
+          EOF
+
+          # The gate. Never-Ready ⇒ non-zero exit ⇒ no promotion.
+          if ! kubectl "${CTX[@]}" -n "${NS}" rollout status "deployment/${SERVICE}" --timeout=180s; then
+            echo "::error::staging rollout for ${SERVICE}:${{ inputs.tag }} did not become Ready — blocking promotion"
+            kubectl "${CTX[@]}" -n "${NS}" get pods -o wide || true
+            kubectl "${CTX[@]}" -n "${NS}" describe deployment "${SERVICE}" || true
+            exit 1
+          fi
+          echo "Staging rollout Ready."
+
+  # ── 2. E2E — Playwright (or smoke floor) against the STAGED service ───────
+  # Reaches staging via `kubectl port-forward` (no new public DNS). Runs on the
+  # SAME runner as the port-forward — a separate reusable-e2e job could not see
+  # this runner's localhost tunnel, so Playwright runs inline here.
+  # Skipped only when e2e-enabled=false; a failing suite BLOCKS promotion.
+  e2e:
+    needs: stage
+    if: ${{ needs.stage.result == 'success' && inputs.e2e-enabled }}
+    runs-on: [self-hosted, linux, amd64]
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      SERVICE: ${{ inputs.service }}
+      PORT: ${{ inputs.port }}
+      HEALTH: ${{ inputs.health-path }}
+      RUN_ID: ${{ github.run_id }}
+      KUBE_CONTEXT: ${{ inputs.kube-context }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Detect test mode
+        id: detect
+        working-directory: ${{ inputs.e2e-dir }}
+        run: |
+          set -euo pipefail
+          if ls playwright.config.* >/dev/null 2>&1; then
+            echo "mode=playwright" >> "$GITHUB_OUTPUT"
+            echo "Playwright config found → running the repo's E2E suite."
+          else
+            echo "mode=smoke" >> "$GITHUB_OUTPUT"
+            echo "No playwright.config.* → falling back to the smoke floor (NOT auto-pass)."
+          fi
+
+      - name: Setup Node.js
+        if: steps.detect.outputs.mode == 'playwright'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install deps + Playwright browser
+        if: steps.detect.outputs.mode == 'playwright'
+        working-directory: ${{ inputs.e2e-dir }}
+        run: |
+          set -euo pipefail
+          if [ -f pnpm-lock.yaml ]; then
+            corepack enable && pnpm install --frozen-lockfile
+          elif [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+          npx playwright install --with-deps chromium
+
+      - name: Port-forward staging + run E2E / smoke
+        working-directory: ${{ inputs.e2e-dir }}
+        env:
+          MODE: ${{ steps.detect.outputs.mode }}
+        run: |
+          set -euo pipefail
+          CTX=(); [ -n "${KUBE_CONTEXT}" ] && CTX=(--context="${KUBE_CONTEXT}")
+          NS="staging-${SERVICE}-${RUN_ID}"
+
+          kubectl "${CTX[@]}" -n "${NS}" port-forward "svc/${SERVICE}" "8080:${PORT}" \
+            > "${RUNNER_TEMP}/pf.log" 2>&1 &
+          PF=$!
+          trap 'kill ${PF} 2>/dev/null || true' EXIT
+
+          # Wait for the tunnel: any HTTP status (even non-2xx) means server up.
+          UP=""
+          for _ in $(seq 1 30); do
+            CODE="$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:8080${HEALTH}" || true)"
+            if [ -n "${CODE}" ] && [ "${CODE}" != "000" ]; then UP=1; break; fi
+            sleep 2
+          done
+          if [ -z "${UP}" ]; then
+            echo "::error::port-forward to staging never became reachable — blocking promotion"
+            cat "${RUNNER_TEMP}/pf.log" || true
+            exit 1
+          fi
+
+          if [ "${MODE}" = "playwright" ]; then
+            echo "Running repo Playwright suite against the staged service…"
+            BASE_URL="http://localhost:8080" \
+            PLAYWRIGHT_BASE_URL="http://localhost:8080" \
+              npx playwright test
+          else
+            echo "Smoke floor: GET ${HEALTH} must be 2xx/3xx AND non-empty…"
+            BODY="${RUNNER_TEMP}/smoke.body"
+            CODE="$(curl -sS -o "${BODY}" -w '%{http_code}' "http://localhost:8080${HEALTH}")"
+            echo "smoke http_code=${CODE}"
+            case "${CODE}" in
+              2??|3??) ;;
+              *) echo "::error::smoke status ${CODE} not 2xx/3xx — blocking promotion"; exit 1 ;;
+            esac
+            if [ ! -s "${BODY}" ]; then
+              echo "::error::smoke body empty — blocking promotion"; exit 1
+            fi
+            echo "Smoke OK ($(wc -c < "${BODY}") bytes)."
+          fi
+
+      - name: Upload Playwright report
+        if: always() && steps.detect.outputs.mode == 'playwright'
+        uses: actions/upload-artifact@v4
+        with:
+          name: promote-e2e-${{ inputs.service }}-${{ inputs.tag }}
+          path: ${{ inputs.e2e-dir }}/playwright-report/
+          retention-days: 7
+          if-no-files-found: ignore
+
+  # ── 3. PROMOTE — the ONLY writer of the prod CR ──────────────────────────
+  # Runs iff stage is green AND e2e passed (or was intentionally disabled).
+  # There is NO path here where promote runs without a green staging rollout.
+  promote:
+    needs: [stage, e2e]
+    if: ${{ !cancelled() && needs.stage.result == 'success' && (needs.e2e.result == 'success' || needs.e2e.result == 'skipped') }}
+    runs-on: [self-hosted, linux, amd64]
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    outputs:
+      promoted: ${{ steps.bump.outputs.promoted }}
+      tag: ${{ steps.bump.outputs.tag }}
+    env:
+      SERVICE: ${{ inputs.service }}
+      TAG: ${{ inputs.tag }}
+      CRS_PATH: ${{ inputs.crs-path }}
+    steps:
+      - name: Guard — cross-repo promotion needs GH_PAT
+        env:
+          CRS_REPO: ${{ inputs.crs-repo }}
+          HAS_PAT: ${{ secrets.GH_PAT != '' }}
+        run: |
+          set -euo pipefail
+          if [ "${CRS_REPO}" != "${{ github.repository }}" ] && [ "${HAS_PAT}" != "true" ]; then
+            echo "::error::crs-repo (${CRS_REPO}) differs from caller repo and no GH_PAT is set — GITHUB_TOKEN cannot push cross-repo. Provide GH_PAT."
+            exit 1
+          fi
+
+      - name: Checkout CR repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ inputs.crs-repo }}
+          ref: main
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          path: crs
+          persist-credentials: true
+
+      - name: Ensure mikefarah yq
+        run: |
+          set -euo pipefail
+          if command -v yq >/dev/null 2>&1 && yq --version 2>/dev/null | grep -qi mikefarah; then
+            echo "yq present: $(yq --version)"
+          else
+            mkdir -p "${RUNNER_TEMP}/bin"
+            curl -fsSL -o "${RUNNER_TEMP}/bin/yq" \
+              https://github.com/mikefarah/yq/releases/download/v4.44.3/yq_linux_amd64
+            chmod +x "${RUNNER_TEMP}/bin/yq"
+            echo "${RUNNER_TEMP}/bin" >> "$GITHUB_PATH"
+          fi
+
+      - name: Surgical CR tag bump
+        id: bump
+        working-directory: crs
+        run: |
+          set -euo pipefail
+          FILE="${CRS_PATH}/${SERVICE}.yaml"
+
+          if [ ! -f "${FILE}" ]; then
+            echo "::error::CR ${FILE} not found in ${{ inputs.crs-repo }}"; exit 1
+          fi
+          # Fail closed: never CREATE a tag in a malformed CR.
+          if [ "$(yq '.spec.image | has("tag")' "${FILE}")" != "true" ]; then
+            echo "::error::.spec.image.tag missing in ${FILE} — refusing to promote"; exit 1
+          fi
+
+          BEFORE="$(yq '.spec.image.tag' "${FILE}")"
+          echo "current=${BEFORE} candidate=${TAG}"
+
+          if [ "${BEFORE}" = "${TAG}" ]; then
+            echo "CR already at ${TAG} — idempotent no-op."
+            echo "promoted=true" >> "$GITHUB_OUTPUT"
+            echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # Semantic edit targets the ONE .spec.image.tag node (immune to any
+          # other `tag:` in the file). yq preserves every comment + all formatting.
+          TAG="${TAG}" yq -i '.spec.image.tag = strenv(TAG)' "${FILE}"
+
+          # Enforce surgical at runtime: exactly one line added + one removed.
+          read -r ADD DEL _ < <(git diff --numstat -- "${FILE}")
+          echo "numstat: +${ADD} -${DEL}"
+          if [ "${ADD}" != "1" ] || [ "${DEL}" != "1" ]; then
+            echo "::error::non-surgical edit (added=${ADD} removed=${DEL}) — refusing to promote"
+            git --no-pager diff -- "${FILE}" || true
+            exit 1
+          fi
+          # Read-back proves the value landed.
+          if [ "$(yq '.spec.image.tag' "${FILE}")" != "${TAG}" ]; then
+            echo "::error::read-back mismatch after edit"; exit 1
+          fi
+
+          echo "--- promotion diff ---"
+          git --no-pager diff -- "${FILE}"
+          echo "promoted=true" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Commit + push promotion
+        working-directory: crs
+        run: |
+          set -euo pipefail
+          FILE="${CRS_PATH}/${SERVICE}.yaml"
+          if git diff --quiet -- "${FILE}"; then
+            echo "No change to commit (idempotent no-op)."; exit 0
+          fi
+          git config user.name  "hanzo-promote-bot"
+          git config user.email "promote@hanzo.ai"
+          git add "${FILE}"
+          git commit -m "chore(promote): ${SERVICE} → ${TAG} (E2E-gated)"
+          for attempt in 1 2 3; do
+            if git push origin HEAD:main; then
+              echo "Pushed promotion (attempt ${attempt})."; exit 0
+            fi
+            echo "push rejected — rebasing on origin/main (attempt ${attempt})"
+            git fetch origin main
+            git rebase origin/main || git rebase --abort
+          done
+          echo "::error::failed to push promotion after 3 attempts"; exit 1
+
+  # ── 4. CLEANUP — always tear down the staging namespace ──────────────────
+  cleanup:
+    needs: [stage, e2e, promote]
+    if: always()
+    runs-on: [self-hosted, linux, amd64]
+    timeout-minutes: 10
+    env:
+      SERVICE: ${{ inputs.service }}
+      RUN_ID: ${{ github.run_id }}
+      KUBE_CONTEXT: ${{ inputs.kube-context }}
+    steps:
+      - name: Delete staging namespace
+        run: |
+          set -euo pipefail
+          CTX=(); [ -n "${KUBE_CONTEXT}" ] && CTX=(--context="${KUBE_CONTEXT}")
+          NS="staging-${SERVICE}-${RUN_ID}"
+          kubectl "${CTX[@]}" delete namespace "${NS}" --ignore-not-found=true --wait=false
+          echo "Requested deletion of ${NS}."
