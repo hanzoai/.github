@@ -1,0 +1,12 @@
+# actionlint config — declare our self-hosted runner labels so `runs-on`
+# references (arcd hosts + DOKS ARC scale-set pools) don't read as "unknown".
+# See RUNNERS.md for the fleet topology.
+self-hosted-runner:
+  labels:
+    - amd64
+    - hanzo-build-linux-amd64
+    - hanzo-deploy-linux-amd64
+    - lux-build-linux-amd64
+    - lux-deploy-linux-amd64
+    - zoo-build-linux-amd64
+    - hanzobot-build-linux-amd64

@@ -43,6 +43,17 @@ Replace `<org>` with `hanzoai` / `luxfi` / `zooai` / `parsdao` / `zenlm`. Per-ho
 - `/Users/a/.arcd/config-linux.yaml` (dbc colima VM, mounted from host `~/.arcd`)
 - `C:\arcd\config.yaml` (evo Windows)
 
+## Promoting to production
+
+Promoting a prod operator CR image tag by hand is **deprecated**. Promotion goes
+through the reusable [`promote.yml`](.github/workflows/promote.yml) gate, so a
+throwaway staging deploy + Playwright E2E (with a non-empty-body smoke floor when
+a repo has no Playwright suite) gates **every** prod CR tag bump before the
+operator/argocd syncs it live — the test gate the `.platform.yml` → operator path
+and manual CR edits never had. Fail-closed: nothing reaches
+`hanzoai/universe:infra/k8s/operator/crs/<service>.yaml` unless staging rolled
+Ready and E2E passed. Adoption + the full job DAG: [docs/PROMOTE_GATE.md](docs/PROMOTE_GATE.md).
+
 ## How to write workflows
 
 ### 1. Reusable Docker build → push GHCR (most common)
