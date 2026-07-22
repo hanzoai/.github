@@ -99,8 +99,13 @@ on:
         default: ""
         type: string
       platforms:
-        description: "Comma-separated platforms to build"
-        default: "linux/amd64,linux/arm64"
+        description: "Comma-separated platforms to build. Default amd64-only — no
+          arm64 arcd runner ([self-hosted,linux,arm64] / spark) is registered, so a
+          multi-arch default hangs build-arm64 forever and create-manifest (needs
+          both arches) never publishes the clean :X.Y.Z tag (only :X.Y.Z-amd64
+          lands). Opt into true multi-arch with 'linux/amd64,linux/arm64' ONCE an
+          arm64 runner exists; then restore this default in one line."
+        default: "linux/amd64"
         type: string
       push:
         description: "Push images to registry"
