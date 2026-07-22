@@ -22,6 +22,8 @@ Two hosts run two personalities each — one arcd per OS:
 
 **spark** is single-personality (Linux arm64 only) but the largest box (3Ti disk, 121Gi RAM) — primary builder for the `<org>-linux-arm64` pool with dbc-linux as round-robin partner.
 
+**dbc macOS + Metal/GPU jobs (REQUIRED for any job that dispatches Metal — e.g. `lux-private/cevm` `.github/workflows/gpu-metal.yml`)**: `MTLCreateSystemDefaultDevice()` returns **nil** unless the arcd runner process runs inside a logged-in **Aqua (GUI) window-server session** — a headless/SSH/LaunchDaemon context has no Metal device, and GPU host factories then silently fall back to CPU (a false green if the job doesn't assert a real device). The runner is already a per-user **LaunchAgent** (`~/Library/LaunchAgents/ai.hanzo.arcd.plist`), the correct category. Operational requirement: dbc must **auto-login to the desktop and keep an active GUI session** (System Settings → Users & Groups → auto-login ON; disable "require password after sleep/screensaver" or keep the session unlocked), so the LaunchAgent loads into Aqua. Verify: `ssh dbc 'launchctl print gui/$(id -u)/ai.hanzo.arcd | grep -i state'` should show the agent running in the GUI domain. Metal-dispatch CI jobs MUST assert a real device (grep the test output, fail on "Metal device unavailable") so a regressed/headless session turns the job red instead of silently skipping.
+
 DO ARC scale-sets (`hanzo-build-linux-amd64`, `hanzo-deploy-linux-amd64`, `zoo-build-linux-amd64`, `lux-build-*`) remain online as ephemeral k8s capacity for amd64-only jobs that need horizontal scale.
 
 ## Pool labels (canonical)
