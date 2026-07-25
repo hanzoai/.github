@@ -137,6 +137,19 @@ jobs:
           # naive github.repository default silently 404s for every
           # hanzoai repo. Encode the exception once, here, rather than
           # in 300+ per-repo `with: repo:` overrides.
+          #
+          # CONTRADICTED BY THE GIT TRANSPORT — resolve before first use.
+          # The API index and the git endpoint disagree about this org:
+          #   git ls-remote https://git.hanzo.ai/hanzoai/app.git   -> OK,
+          #     HEAD == github main (same for .github/cloud/commerce/
+          #     console/git; `hanzo/app.git` -> "Repository not found")
+          #   curl /api/v1/orgs/hanzoai -> 404 · /api/v1/orgs/hanzo -> 200
+          # Code you can clone and push is the ground truth, so the hanzo
+          # repos live at `hanzoai/<name>`; the `hanzo` org the API shows
+          # holds none of them. Until that split is explained, the map
+          # below sends every hanzoai repo to a 404 (loudly — see the
+          # status handling). Native-CI repos are unaffected: they nudge
+          # their own `sync-from-github.yml` and converge on its timer.
           if [ -n "${OVERRIDE}" ]; then
             TARGET="${OVERRIDE}"
           else
