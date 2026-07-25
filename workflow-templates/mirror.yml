@@ -17,8 +17,8 @@ on:
 jobs:
   mirror:
     uses: hanzoai/.github/.github/workflows/mirror.yml@main
-    # Canonical path defaults to this repo's GitHub path. Override ONLY if the
-    # repo was renamed on the canonical forge:
+    # The canonical path is derived automatically, including the hanzoai -> hanzo
+    # org rename. Set this ONLY if the repo carries a different NAME on the forge:
     #   with:
-    #     repo: hanzoai/world
+    #     repo: <org>/<name>
     secrets: inherit
