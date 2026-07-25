@@ -1,0 +1,6 @@
+{
+  "name": "Mirror to git.hanzo.ai",
+  "description": "The ONLY permitted GitHub Actions workflow. Nudges the canonical forge to pull this push. No build, no test, no deploy — those are native to platform.hanzo.ai / cd.hanzo.ai.",
+  "iconName": "git-merge",
+  "categories": ["CI/CD"]
+}
