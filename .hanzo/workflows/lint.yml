@@ -1,0 +1,36 @@
+name: Lint
+# The real CI of this repo. Its product IS workflows: ~90 repos resolve
+# `uses: hanzoai/.github/.github/workflows/<name>.yml@main` against it, so a
+# YAML typo here breaks other repos' builds, not this one's. Gate on that.
+#
+# This is the native successor to the `workflow-sanity.yml` reusable, which has
+# 80 caller repos lint THEIR workflows on OUR runners to enforce the
+# GitHub-Actions-era contract (ARC pools, canonical docker-build reusable).
+# Under the native law a repo's `.github/workflows` holds one sync file, so 5 of
+# that reusable's 6 jobs go vacuous as repos migrate. It stays published until
+# those callers migrate — a reusable is an interface, and deleting one breaks
+# every caller at once — but nothing new should adopt it: a repo's CI belongs in
+# its own `.hanzo/workflows`, the way this file is this repo's.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+concurrency:
+  group: lint
+  cancel-in-progress: true
+jobs:
+  workflows:
+    runs-on: hanzo-linux-amd64
+    steps:
+      - uses: actions/checkout@v4
+      - name: actionlint (every shipped workflow parses + typechecks)
+        run: |
+          set -euo pipefail
+          v=1.7.11
+          curl -sSfL "https://github.com/rhysd/actionlint/releases/download/v${v}/actionlint_${v}_linux_amd64.tar.gz" \
+            | tar -xz actionlint
+          # -shellcheck= : shellcheck is not installed on the runner image and
+          # the shell steps here are curl one-liners, not programs.
+          ./actionlint -shellcheck= .github/workflows/*.yml .hanzo/workflows/*.yml
+      - name: The law — GitHub Actions is a sync, not an orchestrator
+        run: python3 scripts/workflow-law.py

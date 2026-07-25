@@ -1,9 +1,11 @@
-# actionlint config — declare our self-hosted runner labels so `runs-on`
-# references (arcd hosts + DOKS ARC scale-set pools) don't read as "unknown".
-# See RUNNERS.md for the fleet topology.
+# actionlint config — declare our runner labels so `runs-on` references don't
+# read as "unknown". RUNNERS.md is the taxonomy's source of truth: the canonical
+# label is the compound `<org>-<os>-<arch>`; the purpose labels below are compat
+# aliases act_runner still advertises for workflows written before it.
 self-hosted-runner:
   labels:
     - amd64
+    - hanzo-linux-amd64
     - hanzo-build-linux-amd64
     - hanzo-deploy-linux-amd64
     - lux-build-linux-amd64
