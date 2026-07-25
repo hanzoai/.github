@@ -4,10 +4,12 @@ name: Brand Sovereignty (Reusable)
 # source. Cross-org tooling references (OSS Go imports, container images,
 # dep manifests) stay allowed via exempt_paths / exempt_patterns.
 #
-# Authoritative policy: LP-0010 / HIP-0303 / ZIP-0031 / PIP-0006 / LIP-0006.
+# Authoritative policy: LP-0010 / HIP-0303 / ZIP-0031 / PIP-0006.
 #
 # How it works:
-#   1. Caller passes `org` (one of: lux, hanzo, zoo, pars, liquidity).
+#   1. Caller passes `org` — one of the rule files that exist: lux, hanzo, zoo,
+#      pars (this repo's brand-rules/, mirrored by @luxfi/brand-rules). An org
+#      with no rule file is a hard failure at `brand-check`, not a no-op.
 #   2. The job installs @luxfi/brand-rules (single source of truth for the
 #      per-org banlists) and runs `brand-check <org>` against the PR diff.
 #   3. Violations are emitted as GitHub Actions error annotations and the
@@ -30,7 +32,7 @@ on:
   workflow_call:
     inputs:
       org:
-        description: "Org id whose rule to enforce. One of: lux, hanzo, zoo, pars, liquidity."
+        description: "Org id whose rule to enforce. One of: lux, hanzo, zoo, pars."
         required: true
         type: string
       base-ref:
