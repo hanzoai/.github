@@ -22,10 +22,13 @@ GHA = pathlib.Path(".github/workflows")
 NATIVE = pathlib.Path(".hanzo/workflows")
 SYNC = "sync.yml"
 
-# GitHub-hosted runner images. On git.hanzo.ai act_runner advertises them as
-# compat aliases; on github.com they are literally GitHub's machines. Naming one
-# outside the sync nudge means the job is orchestrated by GitHub — the thing the
-# law abolishes.
+# GitHub-hosted runner images. Never ours, and on this org not even available:
+# a GitHub-hosted job is refused outright — "recent account payments have failed
+# or your spending limit needs to be increased" (measured on hanzoai/commerce,
+# 2026-07-25). Every job we run, including the one-curl nudge, belongs on a pool
+# from RUNNERS.md. On git.hanzo.ai act_runner does advertise these names as
+# compat aliases, so a stray `ubuntu-latest` there silently means "whatever the
+# runner decides" instead of a named capability.
 HOSTED = re.compile(r"^\s*runs-on:\s*\[?\s*['\"]?(ubuntu|macos|windows)-", re.M)
 ORCHESTRATION = re.compile(r"build-push-action|docker\s+buildx|kubectl|helm\s+upgrade")
 
@@ -49,23 +52,15 @@ for path in sorted(GHA.glob("*.yml")) + sorted(NATIVE.glob("*.yml")):
     if "\t" in text:
         fail(path, "tab character (YAML must be space-indented)")
 
+    if HOSTED.search(text):
+        fail(path, "GitHub-hosted runner — jobs run on our pools (RUNNERS.md); GitHub-hosted minutes are billing-blocked for this org")
+
     if path.parent == GHA:
         if path.name == SYNC:
-            # The nudge runs on GitHub's own machines on purpose: it is one
-            # bounded curl, and it must keep working when the ARC pools this
-            # migration retires are torn down. Ours build; GitHub's fires the
-            # telegram.
-            if not HOSTED.search(text):
-                fail(path, "the sync nudge must run GitHub-hosted — it must outlive the ARC pools, and it must not consume a build runner")
             if ORCHESTRATION.search(text):
                 fail(path, "the sync nudge must not build, push or deploy — that belongs in .hanzo/workflows")
-        else:
-            if triggers(text) != {"workflow_call"}:
-                fail(path, "self-firing GitHub workflow — only sync.yml may fire; everything else here is `on: workflow_call` API")
-            if HOSTED.search(text):
-                fail(path, "GitHub-hosted runner — reusables execute on act_runner; use a pool from RUNNERS.md")
-    elif HOSTED.search(text):
-        fail(path, "GitHub-hosted runner name — use the canonical <org>-<os>-<arch> pool (RUNNERS.md)")
+        elif triggers(text) != {"workflow_call"}:
+            fail(path, "self-firing GitHub workflow — only sync.yml may fire; everything else here is `on: workflow_call` API")
 
 if not (GHA / SYNC).exists():
     failures.append(f"{GHA / SYNC}: missing — GitHub must still tell the canonical forge about a push")
