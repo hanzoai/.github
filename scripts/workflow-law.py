@@ -3,8 +3,7 @@
 
 THE LAW: `.github/workflows` may do exactly ONE thing — tell git.hanzo.ai that
 a push happened. All real CI lives in `.hanzo/workflows` and runs on our own
-runners (`act_runner`, registered against Hanzo Git; `arcd` is retired, so on
-github.com there is no self-hosted runner left at all).
+runners (`act_runner`, registered against Hanzo Git).
 
 hanzoai/.github is the ONE bounded exception: it is also the org's reusable-
 workflow API, consumed as `uses: hanzoai/.github/.github/workflows/<n>.yml@main`.
@@ -23,10 +22,10 @@ GHA = pathlib.Path(".github/workflows")
 NATIVE = pathlib.Path(".hanzo/workflows")
 SYNC = "sync.yml"
 
-# GitHub-hosted runner images. On github.com they are the ONLY thing that can
-# run a job (post-arcd); on git.hanzo.ai act_runner advertises them as compat
-# aliases. Naming one outside the sync nudge means the job is orchestrated by
-# GitHub — the thing the law abolishes.
+# GitHub-hosted runner images. On git.hanzo.ai act_runner advertises them as
+# compat aliases; on github.com they are literally GitHub's machines. Naming one
+# outside the sync nudge means the job is orchestrated by GitHub — the thing the
+# law abolishes.
 HOSTED = re.compile(r"^\s*runs-on:\s*\[?\s*['\"]?(ubuntu|macos|windows)-", re.M)
 ORCHESTRATION = re.compile(r"build-push-action|docker\s+buildx|kubectl|helm\s+upgrade")
 
@@ -52,10 +51,12 @@ for path in sorted(GHA.glob("*.yml")) + sorted(NATIVE.glob("*.yml")):
 
     if path.parent == GHA:
         if path.name == SYNC:
-            # The nudge is the one job that MUST run on GitHub's own runners:
-            # act_runner is registered against Hanzo Git, never github.com.
+            # The nudge runs on GitHub's own machines on purpose: it is one
+            # bounded curl, and it must keep working when the ARC pools this
+            # migration retires are torn down. Ours build; GitHub's fires the
+            # telegram.
             if not HOSTED.search(text):
-                fail(path, "the sync nudge must run GitHub-hosted — no self-hosted runner is registered on github.com")
+                fail(path, "the sync nudge must run GitHub-hosted — it must outlive the ARC pools, and it must not consume a build runner")
             if ORCHESTRATION.search(text):
                 fail(path, "the sync nudge must not build, push or deploy — that belongs in .hanzo/workflows")
         else:
