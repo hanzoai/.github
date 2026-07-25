@@ -1,15 +1,26 @@
 name: Workflow Sanity (Reusable)
 
-# Enforces the canonical CI contract across every repo in the
-# hanzo / lux / zoo / liquidity orgs:
+# Enforces the GitHub-Actions-era CI contract across the hanzo / lux / zoo /
+# pars orgs:
 #
-#   1. No GitHub-hosted runners — ARC only (hanzo-build-linux-*, hanzo-deploy-linux-*)
+#   1. No GitHub-hosted runners — our pools only (RUNNERS.md)
 #   2. No bespoke `docker/build-push-action` outside this repo — callers
 #      must use hanzoai/.github/.github/workflows/docker-build.yml@main
 #   3. No Docker-build workflow that doesn't reference the canonical reusable
-#   4. No stale runner labels (lux-build-*, lqd-build-*, old aliases)
-#   5. actionlint clean
-#   6. No tabs in workflow files
+#   4. actionlint clean
+#   5. No tabs in workflow files
+#
+# THIS REUSABLE IS TERMINAL. Under the native-CI law a repo's `.github/workflows`
+# holds ONE file — a sync nudge — and its real CI lives in `.hanzo/workflows` on
+# our own runners against git.hanzo.ai (this repo's own CI is
+# `.hanzo/workflows/lint.yml`; the law is `scripts/workflow-law.py`). Every check
+# above then has nothing left to inspect, and the caller stub below is itself the
+# second file the law forbids. So: nothing new adopts this, and each caller
+# DELETES its stub as it migrates — which is also what retires this file. It stays
+# published until that count reaches zero, because a reusable workflow is an
+# interface: deleting one does not disable CI in the calling repos, it makes every
+# `uses:` fail to resolve, breaking them all at once for a migration none of them
+# have made yet.
 #
 # Usage in every repo — a 9-line `.github/workflows/workflow-sanity.yml`:
 #
@@ -58,10 +69,9 @@ jobs:
           python3 - <<'PY'
           from __future__ import annotations
           import pathlib, re, sys
-          # ubuntu-* / macos-* / windows-* at any `runs-on:` — except ubuntu-latest
-          # is tolerated in this sanity workflow itself since the reusable runs on
-          # GitHub-hosted by design (sanity checks have no ARC requirement).
-          # Check CALLER repos only — skip the reusable sanity file itself.
+          # ubuntu-* / macos-* / windows-* at any `runs-on:`. Check the CALLER's
+          # workflows only — the caller's own `workflow-sanity.yml` stub is skipped
+          # by name (it is this reusable's call site, not a job that picks a runner).
           SELF = "workflow-sanity.yml"
           pat = re.compile(r"^\s*runs-on:\s*['\"]?(ubuntu-[0-9a-z\.\-]+|macos-[0-9a-z\.\-]+|windows-[0-9a-z\.\-]+)['\"]?\s*$", re.M)
           root = pathlib.Path(".github/workflows")
@@ -75,35 +85,6 @@ jobs:
                 bad.append(f"{path}: {m.group(0).strip()}")
           if bad:
             print("GitHub-hosted runners found (ARC only — use hanzo-build-linux-amd64 / hanzo-build-linux-arm64 / hanzo-deploy-linux-amd64):")
-            for line in bad: print(f"- {line}")
-            sys.exit(1)
-          PY
-
-  no-stale-runner-labels:
-    runs-on: hanzo-build-linux-amd64
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Fail on old runner labels
-        run: |
-          python3 - <<'PY'
-          from __future__ import annotations
-          import pathlib, re, sys
-          # Pre-consolidation labels that are no longer provisioned.
-          # Per the canonical docker-build.yml reusable, cross-org callers
-          # MUST use {lux,lqd}-build-* labels — those are NOT stale, they
-          # are the required per-org override pattern. Keep this list
-          # empty until genuinely stale labels are identified.
-          stale = re.compile(r"(?!.*)")  # never matches
-          root = pathlib.Path(".github/workflows")
-          bad: list[str] = []
-          for pattern in ("*.yml", "*.yaml"):
-            for path in sorted(root.rglob(pattern)):
-              for n, line in enumerate(path.read_text().splitlines(), 1):
-                if stale.search(line):
-                  bad.append(f"{path}:{n}: {line.strip()}")
-          if bad:
-            print("Stale runner labels found (use hanzo-build-linux-{amd64,arm64} / hanzo-deploy-linux-amd64):")
             for line in bad: print(f"- {line}")
             sys.exit(1)
           PY
