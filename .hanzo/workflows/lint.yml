@@ -20,7 +20,7 @@ concurrency:
   cancel-in-progress: true
 jobs:
   workflows:
-    runs-on: hanzo-linux-amd64
+    runs-on: [hanzo-build-linux-amd64]
     steps:
       - uses: actions/checkout@v4
       - name: actionlint (every shipped workflow parses + typechecks)
