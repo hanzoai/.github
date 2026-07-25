@@ -1,0 +1,197 @@
+name: Mirror to git.hanzo.ai (Reusable)
+
+# ─── THE LAW ─────────────────────────────────────────────────────────
+# git.hanzo.ai is CANONICAL for every repo (lux · hanzo · zoo · pars ·
+# osage). GitHub is a MIRROR. CI/CD and PaaS are NATIVE:
+# platform.hanzo.ai builds, cd.hanzo.ai delivers.
+#
+# A repo's .github/workflows/ may do EXACTLY ONE thing: tell git.hanzo.ai
+# that a push happened. No build. No test gate. No deploy. No image push.
+# Two orchestrators for one job is the cardinal duplicate-path sin —
+# GitHub Actions is retired AS AN ORCHESTRATOR, not merely trimmed.
+#
+# This is that one thing, implemented ONCE, here.
+# ─────────────────────────────────────────────────────────────────────
+#
+# ─── Why a nudge and not `git push --mirror` ─────────────────────────
+# The sync is defined SERVER-SIDE on git.hanzo.ai (each repo is a pull
+# mirror of its GitHub remote, on a timer). This workflow does not
+# re-implement the sync — it fires the existing one NOW instead of
+# waiting for the next tick, so a GitHub push lands canonically in
+# seconds. That choice is deliberate:
+#
+#   * ONE definition of the sync, on the canonical host — not 400+
+#     copies of push credentials scattered across GitHub secret stores.
+#   * NO write credential to the canonical forge ever enters GitHub CI.
+#   * IDEMPOTENT by construction: mirror-sync pulls HEAD, so N nudges
+#     == 1 nudge. Concurrency collapses a burst of pushes into one sync.
+#   * SURVIVES GitHub: the timer still converges when Actions is
+#     disabled or billing-frozen. (The GHA billing freeze already proved
+#     GitHub is a single point of failure — that is why it is demoted.)
+#   * NO force-push footgun: `git push --mirror` DELETES remote refs
+#     absent locally. Aimed at the canonical forge, one stale checkout
+#     erases history. A pull mirror cannot do that.
+#
+# One ref covers branches AND tags: mirror-sync fetches every ref.
+# ─────────────────────────────────────────────────────────────────────
+#
+# ─── Usage ───────────────────────────────────────────────────────────
+#   # .github/workflows/mirror.yml  — the ONLY workflow a migrated repo has
+#   name: Mirror to git.hanzo.ai
+#   on:
+#     push:
+#       branches: ['**']
+#       tags: ['**']
+#     workflow_dispatch: {}
+#   jobs:
+#     mirror:
+#       uses: hanzoai/.github/.github/workflows/mirror.yml@main
+#       secrets: inherit
+#
+# Repo renamed on the canonical forge? Pass `with: repo: hanzoai/world`.
+# ─────────────────────────────────────────────────────────────────────
+
+on:
+  workflow_call:
+    inputs:
+      repo:
+        description: >-
+          Canonical path on git.hanzo.ai as `<org>/<repo>`. Leave unset:
+          it is derived from this repo's GitHub path with the org mapped
+          (see ORG MAP below). Override only when the canonical repo was
+          renamed — e.g. github hanzoai/worldmonitor is hanzo/world.
+        type: string
+        required: false
+        default: ''
+      runner:
+        description: >-
+          Runner label. One bounded curl — the smallest native pool is
+          right. GitHub-hosted runners are NOT a permitted fallback.
+        type: string
+        required: false
+        default: hanzo-build-linux-amd64
+    secrets:
+      HANZO_GIT_TOKEN:
+        description: >-
+          git.hanzo.ai instance token with write access to the mirror.
+          Value lives in KMS at hanzo/prod:/git/admin-token and is
+          projected to the org-level GitHub secret of the same name —
+          never inline a credential in a workflow.
+        required: true
+
+# Only the newest push needs syncing; an older in-flight nudge would pull a
+# now-stale HEAD. Cancelling it is what makes rapid pushes cheap AND correct.
+concurrency:
+  group: mirror-to-git-hanzo-ai
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  mirror:
+    # ── Loop guard ──────────────────────────────────────────────────
+    # git.hanzo.ai runs Gitea Actions, which executes `.github/workflows/`
+    # when `.gitea/workflows/` is absent. Once this file is mirrored, the
+    # canonical forge would otherwise run it and nudge ITSELF on every
+    # push — an infinite self-sync. `github.server_url` is the instance
+    # URL on both platforms, so this pins execution to GitHub alone.
+    if: github.server_url == 'https://github.com'
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 10
+    steps:
+      - name: Nudge canonical forge to pull this push
+        env:
+          HANZO_GIT_TOKEN: ${{ secrets.HANZO_GIT_TOKEN }}
+          OVERRIDE: ${{ inputs.repo }}
+        run: |
+          set -uo pipefail
+
+          # ── ORG MAP ─────────────────────────────────────────────────
+          # Most GitHub orgs keep their name on the canonical forge
+          # (luxfi→luxfi, zooai→zooai, parsdao→parsdao, adnexus→adnexus,
+          # hanzobot/hanzodns/hanzofi/hanzogui/hanzoid/hanzos3/hanzozt →
+          # identical). The ONE exception, verified against the live
+          # forge: GitHub `hanzoai` is `hanzo` there
+          # ("Hanzo — core services."); there is no `hanzoai` org — a
+          # naive github.repository default silently 404s for every
+          # hanzoai repo. Encode the exception once, here, rather than
+          # in 300+ per-repo `with: repo:` overrides.
+          if [ -n "${OVERRIDE}" ]; then
+            TARGET="${OVERRIDE}"
+          else
+            case "${GITHUB_REPOSITORY}" in
+              hanzoai/*) TARGET="hanzo/${GITHUB_REPOSITORY#hanzoai/}" ;;
+              *)         TARGET="${GITHUB_REPOSITORY}" ;;
+            esac
+          fi
+          echo "github.com/${GITHUB_REPOSITORY}  ->  git.hanzo.ai/${TARGET}"
+
+          API="https://git.hanzo.ai/api/v1/repos/${TARGET}/mirror-sync"
+          # git.hanzo.ai's own software API is /api/v1 — that is the
+          # upstream forge surface kept verbatim. Our "/v1, never /api/"
+          # law governs Hanzo SERVICES, not this vendored host.
+
+          # ── Misconfiguration fails as loudly as an outage ───────────
+          # A missing token must NOT pass silently: a repo that looks
+          # green while mirroring nothing is the exact failure mode that
+          # lets "canonical" quietly become a lie.
+          if [ -z "${HANZO_GIT_TOKEN:-}" ]; then
+            echo "::error title=Mirror not configured::secret HANZO_GIT_TOKEN is unset for ${GITHUB_REPOSITORY}."
+            echo "This repo is NOT mirroring to git.hanzo.ai — the canonical copy is stale."
+            echo "Fix: set the org-level GitHub secret HANZO_GIT_TOKEN (value in KMS at hanzo/prod:/git/admin-token)"
+            echo "and ensure the caller passes 'secrets: inherit'."
+            exit 1
+          fi
+
+          # ── Retry with exponential backoff ──────────────────────────
+          # git.hanzo.ai is the canonical forge and is being brought back
+          # under owner review. Ride out a restart window rather than
+          # redding a push for a 30-second blip — but never pretend a
+          # sustained outage succeeded.
+          code=000
+          for delay in 5 10 20 40 80 0; do
+            code=$(curl -sS -o /tmp/mirror-body -w '%{http_code}' --max-time 30 \
+                     -X POST \
+                     -H "Authorization: token ${HANZO_GIT_TOKEN}" \
+                     -H "Content-Type: application/json" \
+                     "${API}" || echo 000)
+
+            case "${code}" in
+              200|202)
+                echo "mirror-sync accepted (HTTP ${code}) — git.hanzo.ai/${TARGET} is pulling ${GITHUB_SHA}"
+                exit 0
+                ;;
+              401|403)
+                # Credential problems never self-heal. Stop immediately.
+                echo "::error title=Mirror auth rejected::git.hanzo.ai returned HTTP ${code} for ${TARGET}."
+                echo "HANZO_GIT_TOKEN is invalid, expired, or lacks write access to this mirror."
+                echo "Rotate it from KMS hanzo/prod:/git/admin-token. Not retrying — auth does not recover on its own."
+                exit 1
+                ;;
+              404)
+                echo "::error title=Canonical repo missing::git.hanzo.ai has no repo '${TARGET}' (HTTP 404)."
+                echo "Create it on the canonical forge, or pass 'with: repo: <org>/<name>' if it was renamed."
+                echo "Not retrying — a missing repo does not appear on its own."
+                exit 1
+                ;;
+            esac
+
+            if [ "${delay}" -gt 0 ]; then
+              echo "git.hanzo.ai unreachable (HTTP ${code}) — retrying in ${delay}s"
+              sleep "${delay}"
+            fi
+          done
+
+          # ── Sustained outage: fail loudly, name it precisely ────────
+          echo "::error title=git.hanzo.ai unreachable::mirror-sync for ${TARGET} failed after 5 retries (last HTTP ${code})."
+          if [ "${code}" = "503" ] || [ "${code}" = "502" ] || [ "${code}" = "000" ]; then
+            echo "HTTP ${code} means the canonical forge is DOWN, not that this repo is misconfigured."
+            echo "The hanzo-git deployment in ns 'hanzo' on hanzo-k8s serves it and is under OWNER review."
+            echo "Do NOT patch, restart, or scale hanzo-git to clear this — the outage is being handled."
+          fi
+          echo "git.hanzo.ai/${TARGET} is now BEHIND github.com/${GITHUB_REPOSITORY} at ${GITHUB_SHA}."
+          echo "This job re-runs green with no code change once the forge is healthy; the server-side"
+          echo "timer also converges on its own. Re-run this workflow to confirm recovery."
+          head -c 500 /tmp/mirror-body 2>/dev/null || true
+          exit 1
