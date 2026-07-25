@@ -35,6 +35,24 @@ name: Mirror to git.hanzo.ai (Reusable)
 # One ref covers branches AND tags: mirror-sync fetches every ref.
 # ─────────────────────────────────────────────────────────────────────
 #
+# ─── Which sync a repo uses ──────────────────────────────────────────
+# Two repo classes, one nudge each — the class is a property of the repo
+# on the forge, not a choice:
+#
+#   * MIRROR class — the forge repo is a Gitea PULL MIRROR (mirror:true)
+#     and carries no native CI. `mirror-sync` is its only sync. THIS file.
+#   * NATIVE-CI class — the forge repo is a normal repo we push to, with
+#     real CI in `.hanzo/workflows`. `mirror-sync` is a no-op (404/ignored)
+#     there, so it nudges `.hanzo/workflows/sync-from-github.yml` instead,
+#     which fast-forwards main in-cluster and dispatches the build. That
+#     is a per-repo `.github/workflows/sync.yml` — see hanzoai/.github,
+#     hanzoai/app, hanzoai/cloud.
+#
+# Same law (GitHub tells the forge, GitHub never builds), same shape (one
+# bounded curl, idempotent, fail-loud); different endpoint because the two
+# repo classes converge differently. Do not add a third.
+# ─────────────────────────────────────────────────────────────────────
+#
 # ─── Usage ───────────────────────────────────────────────────────────
 #   # .github/workflows/mirror.yml  — the ONLY workflow a migrated repo has
 #   name: Mirror to git.hanzo.ai
@@ -48,7 +66,9 @@ name: Mirror to git.hanzo.ai (Reusable)
 #       uses: hanzoai/.github/.github/workflows/mirror.yml@main
 #       secrets: inherit
 #
-# Repo renamed on the canonical forge? Pass `with: repo: hanzoai/world`.
+# The canonical path is derived automatically (see ORG MAP in the run
+# step). Pass `with: repo: <org>/<name>` ONLY if this repo carries a
+# different NAME on the forge than it does on GitHub.
 # ─────────────────────────────────────────────────────────────────────
 
 on:
@@ -58,8 +78,8 @@ on:
         description: >-
           Canonical path on git.hanzo.ai as `<org>/<repo>`. Leave unset:
           it is derived from this repo's GitHub path with the org mapped
-          (see ORG MAP below). Override only when the canonical repo was
-          renamed — e.g. github hanzoai/worldmonitor is hanzo/world.
+          (see ORG MAP below). Set it only when the repo NAME differs on
+          the forge — the org rename is already handled for you.
         type: string
         required: false
         default: ''
