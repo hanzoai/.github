@@ -1,0 +1,58 @@
+name: Sync from GitHub
+# git.hanzo.ai is canonical, but development also lands on
+# github.com/hanzoai/.github (that path is what 90+ caller repos resolve
+# `uses: hanzoai/.github/.github/workflows/<name>.yml@main` against, so the
+# GitHub copy can never be allowed to drift ahead unnoticed).
+#
+# ONE deterministic direction: an in-cluster PULL. The runner reaches both ends
+# — GitHub outbound and this Gitea via the instance URL actions/checkout already
+# uses — so no ingress dependency. Fast-forward only: a divergence fails LOUDLY
+# here rather than force-pushing either side.
+on:
+  schedule:
+    - cron: '*/10 * * * *'
+  workflow_dispatch: {}
+concurrency:
+  group: sync-from-github
+  cancel-in-progress: false
+jobs:
+  ff-main:
+    runs-on: hanzo-linux-amd64
+    steps:
+      - name: Checkout Gitea main (full history for the ancestry check)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Persist the token-auth remote so the push below reuses it.
+          persist-credentials: true
+      - name: Fast-forward main from github.com/hanzoai/.github
+        env:
+          GH_PAT: ${{ secrets.GH_PAT }}
+        run: |
+          set -euo pipefail
+          git fetch --quiet "https://x-access-token:${GH_PAT}@github.com/hanzoai/.github.git" main
+          LOCAL="$(git rev-parse HEAD)"
+          REMOTE="$(git rev-parse FETCH_HEAD)"
+          if [ "$LOCAL" = "$REMOTE" ]; then
+            echo "in sync at $LOCAL"
+            exit 0
+          fi
+          if git merge-base --is-ancestor "$LOCAL" "$REMOTE"; then
+            echo "fast-forwarding $LOCAL -> $REMOTE"
+            git push origin "$REMOTE:refs/heads/main"
+            # A push made with the workflow token does NOT trigger other
+            # workflows (loop prevention) — so synced commits would never be
+            # linted. Dispatch the lint explicitly.
+            curl -fsS --max-time 20 -X POST \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Content-Type: application/json" \
+              "${{ github.server_url }}/api/v1/repos/${{ github.repository }}/actions/workflows/lint.yml/dispatches" \
+              -d '{"ref":"main"}' \
+              && echo "lint dispatched" || echo "lint dispatch failed (non-fatal — next direct push lints)"
+          elif git merge-base --is-ancestor "$REMOTE" "$LOCAL"; then
+            echo "Gitea is AHEAD of GitHub ($REMOTE ancestor of $LOCAL) — nothing to pull."
+            echo "(GitHub catch-up is a separate concern; never force from here.)"
+          else
+            echo "::error::main DIVERGED between GitHub ($REMOTE) and Gitea ($LOCAL) — refusing to force. Reconcile manually."
+            exit 1
+          fi
