@@ -1,0 +1,6 @@
+{
+  "name": "Platform Build (arcd executor)",
+  "description": "Dispatched by platform.hanzo.ai to build+push on self-hosted arcd pools and call back for operator rollout. Pairs with a repo .platform.yml.",
+  "iconName": "package",
+  "categories": ["CI/CD", "Docker"]
+}
