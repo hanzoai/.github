@@ -1,0 +1,12 @@
+Z <z@hanzo.ai> <zach.kelling@satschel.com>
+Z <z@hanzo.ai> <zach.kelling.6@satschel.com>
+Hanzo Dev <dev@hanzo.ai> <woo.bin@satschel.com>
+Hanzo Dev <dev@hanzo.ai> <noreply@anthropic.com>
+Hanzo Dev <dev@hanzo.ai> <claude@anthropic.com>
+Hanzo Dev <dev@hanzo.ai> <codex@openai.com>
+Hanzo Dev <dev@hanzo.ai> <noreply@openai.com>
+Hanzo Dev <dev@hanzo.ai> <cursoragent@cursor.com>
+Hanzo Dev <dev@hanzo.ai> <agent@cursor.com>
+Hanzo Dev <dev@hanzo.ai> <bot@lovable.dev>
+Hanzo Dev <dev@hanzo.ai> <devin@cognition.ai>
+Hanzo Dev <dev@hanzo.ai> <noreply@codeium.com>

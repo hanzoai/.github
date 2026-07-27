@@ -1,0 +1,8 @@
+regex:(?i)zach\.kelling(\.6)?@satschel\.com==>z@hanzo.ai
+regex:(?i)woo\.bin@satschel\.com==>dev@hanzo.ai
+regex:(?i)([a-z0-9-]+)\.satschel\.com==>\1.example.internal
+regex:(?i)satschel\.com==>example.internal
+regex:(?i)liquidityio==>partner
+regex:(?i)liquidity\.io==>partner
+regex:(?i)satschel==>partner
+regex:(?i)\bxitkov\b==>partner
