@@ -58,8 +58,14 @@ def work(slug):
         before = len(DIRTY.findall(body))
         if before == 0:
             emit(f"OK   {slug} already-clean"); return
+        # Two flags, two jobs, and they must NOT be combined with --mailmap:
+        #   --replace-message  rewrites commit messages / trailers
+        #   --email-callback   rewrites author + committer email fields
+        # Adding --mailmap alongside the callback makes filter-repo skip message
+        # replacement entirely — exit 0, no warning.
         run([FR, "--force", "--prune-empty=never",
-             "--replace-message", f"{RULES}/messages.txt"], cwd=d, t=7200)
+             "--replace-message", f"{RULES}/messages.txt",
+             "--email-callback", CB], cwd=d, t=7200)
         run([GIT, "-C", d, "remote", "add", "origin", url], t=60)
         heads = run([GIT, "-C", d, "for-each-ref", "--format=%(refname:short)", "refs/heads"], t=300).stdout.decode().split()
         body = run([GIT, "-C", d, "log", "--format=%ae%n%ce%n%B",
