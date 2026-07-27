@@ -1,0 +1,18 @@
+regex:(?i)co-authored-by:\s*(claude|anthropic|codex|openai|chatgpt|cursor|copilot|lovable|devin|cognition|windsurf|codeium|bolt|stackblitz|replit|aider|cody|sourcegraph|tabnine|gemini|jules|coderabbit|qodo|codium|cline|openhands|blackbox|phind|grok|deepseek|qwen)[^\n]*==>Co-authored-by: Hanzo Dev <dev@hanzo.ai>
+regex:(?i)co-authored-by:[^\n]*<[^>\n]*@(anthropic|openai|cursor|lovable|cognition|codeium|replit|sourcegraph|tabnine|qodo|codium|coderabbit|greptile|augmentcode|zed|warp|blackbox|phind|mistral|deepseek)\.[a-z]+>[^\n]*==>Co-authored-by: Hanzo Dev <dev@hanzo.ai>
+regex:(?i)co-authored-by:\s*[^\n<]*\[bot\][^\n]*==>Co-authored-by: Hanzo Dev <dev@hanzo.ai>
+regex:(?i)(made-with|generated-by|generated-with|assisted-by|ai-assisted-by|created-with|built-with):[^\n]*==>
+regex:(?i)generated with \[[^\]\n]*\]\([^)\n]*\)==>
+regex:(?i)(claude|cursor|lovable|devin|copilot|codex)-session:[^\n]*==>
+regex:(?i)https?://(claude\.(ai|com)|cursor\.(sh|com)|lovable\.dev|devin\.ai|codeium\.com)[^\s\n)]*==>
+regex:(?i)\bnoreply@anthropic\.com\b==>dev@hanzo.ai
+regex:(?i)\banthropic\.com\b==>hanzo.ai
+regex:(?i)\bclaude[- ]code\b==>agent
+regex:(?i)zach\.kelling(\.6)?@satschel\.com==>z@hanzo.ai
+regex:(?i)woo\.bin@satschel\.com==>dev@hanzo.ai
+regex:(?i)liquidityio/([a-z0-9_.-]+)==>partner/\1
+regex:(?i)liquidity\.io==>partner
+regex:(?i)liquidityio==>partner
+regex:(?i)satschel\.com==>example.internal
+regex:(?i)satschel==>partner
+regex:(?i)\bxitkov\b==>partner
