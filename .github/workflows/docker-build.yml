@@ -292,8 +292,19 @@ jobs:
           target: ${{ inputs.target || '' }}
           labels: ${{ steps.meta.outputs.labels }}
           tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=gha,scope=${{ inputs.image }}-amd64
-          cache-to: type=gha,scope=${{ inputs.image }}-amd64,mode=max
+          # Registry cache, not type=gha. buildx's gha exporter parses
+          # ACTIONS_RUNTIME_TOKEN as a GitHub JWT to derive its scope; our
+          # forge issues a token that is not one, so every build died with
+          # "failed to configure gha cache exporter: token is malformed:
+          # token contains an invalid number of segments" — AFTER metadata
+          # and login had already succeeded. A registry cache needs only the
+          # registry auth this job already has, and works on either plane.
+          # cache-to is gated on push because exporting needs write access;
+          # a PR build (push: false) reads the cache and exports nothing.
+          # The buildcache-* tags are cache manifests, never deployable
+          # images, so the semver-only tag policy does not apply to them.
+          cache-from: type=registry,ref=${{ inputs.cache-key || inputs.image }}:buildcache-amd64
+          cache-to: ${{ inputs.push && format('type=registry,ref={0}:buildcache-amd64,mode=max', inputs.cache-key || inputs.image) || '' }}
           provenance: false
           push: ${{ inputs.push }}
           # Private cross-repo deps (hanzoai/*, luxfi/*): expose the org PAT as
@@ -388,8 +399,9 @@ jobs:
           target: ${{ inputs.target || '' }}
           labels: ${{ steps.meta.outputs.labels }}
           tags: ${{ steps.meta.outputs.tags }}
-          cache-from: type=gha,scope=${{ inputs.image }}-arm64
-          cache-to: type=gha,scope=${{ inputs.image }}-arm64,mode=max
+          # See the amd64 job — type=gha cannot work on this forge.
+          cache-from: type=registry,ref=${{ inputs.cache-key || inputs.image }}:buildcache-arm64
+          cache-to: ${{ inputs.push && format('type=registry,ref={0}:buildcache-arm64,mode=max', inputs.cache-key || inputs.image) || '' }}
           provenance: false
           push: ${{ inputs.push }}
           # Private cross-repo deps (hanzoai/*, luxfi/*): expose the org PAT as
@@ -407,7 +419,7 @@ jobs:
   # Composes the merged manifest from the per-arch tags the build jobs
   # pushed, NOT from the build-job digest outputs. Rationale: the
   # spark.local arm64 runner is on WiFi; multi-GB layer pushes succeed
-  # but the post-push `cache-to: type=gha` export occasionally drops
+  # but the post-push `cache-to` export occasionally drops
   # mid-flight ("tls: bad record MAC", "rpc error: code = Unavailable,
   # closing transport"). buildx then exits non-zero AFTER the image is
   # already in the registry. Gating on `needs.*.result == 'success'`
