@@ -326,9 +326,16 @@ jobs:
           # ~/.netrc line (id=netrc, e.g. plain `git clone`/curl over HTTPS).
           # Both derive from ONE source token; a Dockerfile that mounts neither
           # id ignores both (no-op — additive, safe for every sibling repo).
+          #
+          # The fallback is GHCR_TOKEN, not GITHUB_TOKEN. orgs/luxfi provisions no
+          # GH_PAT, and a missing org secret is "" — so for every luxfi caller this
+          # used to hand the Dockerfile git.hanzo.ai's own token, which github.com
+          # has never seen, and the build died on `could not read Username`.
+          # GHCR_TOKEN has to be a real GitHub PAT for ghcr.io to accept it, so it
+          # resolves private modules too.
           secrets: |
-            gh_token=${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
-            netrc=machine github.com login x-access-token password ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+            gh_token=${{ secrets.GH_PAT || secrets.GHCR_TOKEN }}
+            netrc=machine github.com login x-access-token password ${{ secrets.GH_PAT || secrets.GHCR_TOKEN }}
 
   # ── arm64 (native arcd runner — spark matches [self-hosted, linux, arm64]) ──
   build-arm64:
@@ -424,8 +431,8 @@ jobs:
           # Both derive from ONE source token; a Dockerfile that mounts neither
           # id ignores both (no-op — additive, safe for every sibling repo).
           secrets: |
-            gh_token=${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
-            netrc=machine github.com login x-access-token password ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+            gh_token=${{ secrets.GH_PAT || secrets.GHCR_TOKEN }}
+            netrc=machine github.com login x-access-token password ${{ secrets.GH_PAT || secrets.GHCR_TOKEN }}
 
   # ── Multi-platform manifest (both platforms) ─────────────────
   #
