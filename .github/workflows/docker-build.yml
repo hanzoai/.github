@@ -236,13 +236,26 @@ jobs:
           mkdir -p "$HOME/.docker"
           printf '{}' > "$HOME/.docker/config.json"
 
+      # ghcr.io wants a GitHub credential, and every caller of this reusable runs on
+      # a self-hosted pool -- so `secrets.GITHUB_TOKEN` is git.hanzo.ai's token, which
+      # ghcr.io has never seen (`denied: denied`).
+      #
+      # The old `GH_PAT || GITHUB_TOKEN` chain worked for hanzoai callers and could
+      # never work for luxfi ones: orgs/hanzoai provisions GH_PAT, orgs/luxfi does
+      # not, a missing org secret evaluates to "", and the chain then silently fell
+      # through to the forge token. That is why the same reusable published fine for
+      # one org and answered `denied` for the other, with nothing in the log naming
+      # which credential was used.
+      #
+      # GHCR_USER + GHCR_TOKEN are provisioned on BOTH orgs, so one name serves every
+      # caller. Stated once here; the four other login steps below are identical.
       - name: Login to GHCR
         if: inputs.registry == 'ghcr.io'
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.GHCR_USER }}
+          password: ${{ secrets.GHCR_TOKEN }}
 
       - name: Login to GAR
         if: inputs.registry == 'us-docker.pkg.dev'
@@ -352,8 +365,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.GHCR_USER }}
+          password: ${{ secrets.GHCR_TOKEN }}
 
       - name: Login to GAR
         if: inputs.registry == 'us-docker.pkg.dev'
@@ -463,8 +476,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.GHCR_USER }}
+          password: ${{ secrets.GHCR_TOKEN }}
 
       - name: Login to GAR
         if: inputs.registry == 'us-docker.pkg.dev'
@@ -573,8 +586,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.GHCR_USER }}
+          password: ${{ secrets.GHCR_TOKEN }}
 
       - name: Login to GAR
         if: inputs.registry == 'us-docker.pkg.dev'
@@ -734,8 +747,8 @@ jobs:
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+          username: ${{ secrets.GHCR_USER }}
+          password: ${{ secrets.GHCR_TOKEN }}
 
       - name: Login to GAR
         if: inputs.registry == 'us-docker.pkg.dev'
