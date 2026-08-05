@@ -971,7 +971,17 @@ jobs:
         env:
           DOCKER_METADATA_OUTPUT_JSON: ${{ steps.ref.outputs.json }}
 
+      # Non-fatal because the step below it is the one that matters. git.hanzo.ai
+      # advertises itself as GHES, and upload-artifact@v4 refuses GHES outright
+      # ("@actions/artifact v2.0.0+ … are not currently supported on GHES"), so on
+      # that plane this step ALWAYS fails. Failing hard here skipped the cosign
+      # attach entirely — the artifact is a convenience that expires with the run,
+      # the attestation is what persists in the registry, and losing the durable
+      # one to save the ephemeral one is backwards. Surfaced when the boolean gate
+      # above was fixed and this job ran for the first time (hanzoai/replicate,
+      # job 48595).
       - name: Upload SBOM artifact
+        continue-on-error: true
         uses: actions/upload-artifact@v4
         with:
           name: sbom-${{ github.sha }}
