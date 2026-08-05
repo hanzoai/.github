@@ -1,161 +1,145 @@
 <div align="center">
 
-# Hanzo — the Open AI Cloud
+# Hanzo
 
-**Open source. Every language. On-chain settlement.**
+**Run the AI cloud on your own machine.**
 
-A full AI SDK and AI cloud: models, agents, tools, memory, MCP, inference —
-plus the compute, data, network, security, and platform primitives to ship them.
+Everything below is open source. The same code runs our cloud and yours.
 
-[![Website](https://img.shields.io/badge/Website-hanzo.ai-111111?style=flat-square)](https://hanzo.ai)
-[![Docs](https://img.shields.io/badge/Docs-docs.hanzo.ai-2563eb?style=flat-square)](https://docs.hanzo.ai)
-[![Cloud](https://img.shields.io/badge/Open_AI_Cloud-GCP--compatible-16a34a?style=flat-square)](https://cloud.hanzo.ai)
-[![Techstars](https://img.shields.io/badge/Techstars-'17-e11d48?style=flat-square)](https://hanzo.ai)
+[hanzo.ai](https://hanzo.ai) · [docs.hanzo.ai](https://docs.hanzo.ai) · [cloud.hanzo.ai](https://cloud.hanzo.ai)
 
 </div>
 
 ---
 
-Hanzo is the **Open AI Cloud** — an open-source, GCP-compatible platform with
-on-chain settlement. One API surface (`/v1/`), idiomatic SDKs in every language,
-and a flagship AI/agents library. Build with our own **Zen** model family, run
-anywhere, and settle usage on-chain.
+## Start here — the local stack
+
+Most AI platforms give you an API key. We give you the platform. Install one
+binary and you have inference, agents, tools, and storage running locally, with
+no account and no network call.
 
 ```bash
-pip install hanzo          # Python — flagship AI + agents SDK
-npm  install @hanzo/ai     # TypeScript / JavaScript
+curl -fsSL https://hanzo.sh | sh     # the CLI, the MCP server, the coding agent
+hanzo                                # an AI engineer in your terminal
 ```
 
-- **Start here:** [hanzo.ai](https://hanzo.ai) · [docs.hanzo.ai](https://docs.hanzo.ai) · [cloud.hanzo.ai](https://cloud.hanzo.ai)
-- **SDK index:** [hanzoai/sdk](https://github.com/hanzoai/sdk) — one install, every service, every language
-- **API spec:** [hanzoai/openapi](https://github.com/hanzoai/openapi) — OpenAPI 3.1, the single source of truth
+Prefer a window to a prompt? [Download Hanzo Desktop](https://github.com/hanzoai/desktop/releases)
+— it ships the node and the inference engine inside the app, so it works offline
+on the first launch.
+
+| | What it is |
+|---|---|
+| **[desktop](https://github.com/hanzoai/desktop)** | The whole stack as a desktop app. Bundles the agent node and the inference engine as sidecars — install it and you are running local AI, no config. macOS · Windows · Linux. |
+| **[cli](https://github.com/hanzoai/cli)** | One static Rust binary: an AI coding agent, and every product of the Hanzo cloud from the terminal. No runtime, no daemon. |
+| **[engine](https://github.com/hanzoai/engine)** | The inference engine. Fast, flexible LLM and embedding serving in Rust — the thing that actually runs the model. |
+| **[ml](https://github.com/hanzoai/ml)** | The compute core underneath it: multi-backend tensors for Rust across CPU · CUDA · Metal · ROCm · Vulkan, quantization built in. |
+| **[net](https://github.com/hanzoai/net)** | Pool the machines you already own — iPhone, Mac, Raspberry Pi, NVIDIA boxes — into one inference cluster. |
+| **[edge](https://github.com/hanzoai/edge)** | On-device inference for mobile, web, and embedded, built on Hanzo ML. |
+
+Local and cloud are the same API (`/v1/`). Point a client at `localhost` or at
+`api.hanzo.ai` and nothing else changes.
 
 ---
 
-## SDKs — every language, two lines
+## Build with AI
 
-Every language ships **two** SDKs, and there is only ever one way to build each:
-
-1. **Full Cloud SDK** — generated from our [OpenAPI](https://github.com/hanzoai/openapi)
-   spec, covering the entire `/v1/` surface. Real, idiomatic code lives in the
-   per-language ecosystem org as **`hanzo-<lang>/sdk`**.
-2. **AI / Agents SDK** — the hand-crafted flagship: models, agents, tools,
-   memory, MCP, inference.
-
-The per-language orgs hold the real code — proof we genuinely adopt and love
-each ecosystem. A docs/landing wrapper (`hanzoai/<lang>-sdk`) lives here in the
-umbrella so everything is discoverable in one place.
-
-| Language | Ecosystem org | Cloud SDK (real code) | AI / Agents SDK |
-|----------|---------------|-----------------------|-----------------|
-| **Python** &nbsp;·&nbsp; _flagship, most complete_ | [hanzo-py](https://github.com/hanzo-py) | [hanzoai/python-sdk](https://github.com/hanzoai/python-sdk) | [hanzoai/python-sdk](https://github.com/hanzoai/python-sdk) &nbsp;`hanzo` |
-| TypeScript / JavaScript | [hanzo-js](https://github.com/hanzo-js) | [hanzo-js/sdk](https://github.com/hanzo-js/sdk) | [hanzo-js/ai](https://github.com/hanzo-js/ai) &nbsp;`@hanzo/ai` |
-| Rust | [hanzo-rs](https://github.com/hanzo-rs) | [hanzo-rs/sdk](https://github.com/hanzo-rs/sdk) | — |
-| Go | [hanzo-go](https://github.com/hanzo-go) | [hanzo-go/sdk](https://github.com/hanzo-go/sdk) | — |
-| C++ | [hanzo-cpp](https://github.com/hanzo-cpp) | [hanzo-cpp/sdk](https://github.com/hanzo-cpp/sdk) | — |
-| Swift | [hanzo-swift](https://github.com/hanzo-swift) | _in progress_ | — |
-| Kotlin | [hanzo-kt](https://github.com/hanzo-kt) | _in progress_ | — |
-
-Umbrella docs/landing wrappers: [js-sdk](https://github.com/hanzoai/js-sdk) ·
-[python-sdk](https://github.com/hanzoai/python-sdk) ·
-[ruby-sdk](https://github.com/hanzoai/ruby-sdk) ·
-[java-sdk](https://github.com/hanzoai/java-sdk) ·
-[dart-sdk](https://github.com/hanzoai/dart-sdk).
-Completeness order (investment priority): **Python → Rust → C++ → Go → others.**
+| | What it is |
+|---|---|
+| [python-sdk](https://github.com/hanzoai/python-sdk) | The most complete SDK we ship: agents, MCP tools, memory, inference, cloud. |
+| [js-sdk](https://github.com/hanzoai/js-sdk) | TypeScript and JavaScript — agents, cloud, inference. |
+| [java-sdk](https://github.com/hanzoai/java-sdk) · [sdk](https://github.com/hanzoai/sdk) | Typed Java client, and the index of every SDK in every language. |
+| [mcp](https://github.com/hanzoai/mcp) | Model Context Protocol server — 260+ tools for agents. |
+| [agent](https://github.com/hanzoai/agent) | Multi-agent framework with an OpenAI-compatible API. |
+| [dev](https://github.com/hanzoai/dev) | A fast local coding agent for your terminal. |
+| [code](https://github.com/hanzoai/code) | An open source AI code editor — any model, your data stays yours. |
+| [extension](https://github.com/hanzoai/extension) | The same agent inside VS Code and compatible editors. |
+| [app](https://github.com/hanzoai/app) | Describe an app, get an app. AI web and app builder. |
+| [studio](https://github.com/hanzoai/studio) | Visual AI engine — build pipelines by wiring them up. |
+| [chat](https://github.com/hanzoai/chat) · [bot](https://github.com/hanzoai/bot) | Chat with MCP and any provider; the same assistant on WhatsApp, Telegram, Slack, Discord. |
+| [crawl](https://github.com/hanzoai/crawl) | Web crawling that returns LLM-ready text. |
 
 ---
 
-## AI & Agents
+## Run the cloud
 
-The AI-first stack — the flagship of the whole platform.
+These are the services behind `api.hanzo.ai`. Each is a single binary you can
+run yourself.
 
-| Repo | What it is |
-|------|------------|
-| [python-sdk](https://github.com/hanzoai/python-sdk) | **Flagship** AI + agents toolkit for Python: `hanzo`, `hanzo-agent`, `hanzo-mcp`, `hanzo-memory`, inference — the most complete SDK we ship. |
-| [hanzo-js/ai](https://github.com/hanzo-js/ai) | `@hanzo/ai` — the Node/TypeScript AI + agents library. |
-| [agent](https://github.com/hanzoai/agent) | Multi-agent SDK with an OpenAI-compatible API. |
-| [mcp](https://github.com/hanzoai/mcp) | Model Context Protocol server — 260+ tools for AI agents. |
-| [memory](https://github.com/hanzoai/memory) | Persistent memory API for agents and applications. |
-| [tools](https://github.com/hanzoai/tools) | Reusable tool library for AI agents. |
-| [operative](https://github.com/hanzoai/operative) | Autonomous computer-use agent. |
-| [ai](https://github.com/hanzoai/ai) | AI control plane — RAG, model hub, and native Go routing. |
-| [engine](https://github.com/hanzoai/engine) | Rust inference engine for LLM & embedding models. |
-| [router](https://github.com/hanzoai/router) | Pure-Rust, memory- & engine-aware model-routing core. |
-| [node](https://github.com/hanzoai/node) | Rust AI-agent node with an on-chain interface. |
+| | What it is |
+|---|---|
+| [platform](https://github.com/hanzoai/platform) | The PaaS. Git push to deploy, on your own Kubernetes. |
+| [console](https://github.com/hanzoai/console) | The admin and observability console for all of it. |
+| [iam](https://github.com/hanzoai/iam) | Identity — OIDC, JWT, per-brand SSO. Never roll your own auth. |
+| [gateway](https://github.com/hanzoai/gateway) | The trust boundary: identity, rate limiting, metering, CORS. |
+| [authz](https://github.com/hanzoai/authz) · [hsm](https://github.com/hanzoai/hsm) | Access control for Go (ACL/RBAC/ABAC); HSM signers including ML-DSA. |
+| [functions](https://github.com/hanzoai/functions) | Serverless compute for event-driven work. |
+| [tasks](https://github.com/hanzoai/tasks) | Durable workflow execution for agent orchestration. |
+| [commerce](https://github.com/hanzoai/commerce) · [finance](https://github.com/hanzoai/finance) | Orders, subscriptions, metering, credit ledger; a double-entry financial core. |
+| [flags](https://github.com/hanzoai/flags) · [insights](https://github.com/hanzoai/insights) | Feature flags and A/B; product analytics. |
+| [o11y](https://github.com/hanzoai/o11y) · [otel-collector](https://github.com/hanzoai/otel-collector) | OpenTelemetry-native metrics, traces, logs. |
 
 ---
 
-## Cloud & Platform
+## Data
 
-The services behind [cloud.hanzo.ai](https://cloud.hanzo.ai) and `api.hanzo.ai`.
+| | What it is |
+|---|---|
+| [base](https://github.com/hanzoai/base) | The storage substrate: multi-tenant SQLite with in-process polyglot extensions and encrypted replication. |
+| [datastore](https://github.com/hanzoai/datastore) | Column-oriented OLAP for real-time analytics. |
+| [s3](https://github.com/hanzoai/s3) · [vfs](https://github.com/hanzoai/vfs) | S3-compatible object storage; an S3-backed virtual block filesystem. |
+| [sql](https://github.com/hanzoai/sql) · [kv](https://github.com/hanzoai/kv) · [docdb](https://github.com/hanzoai/docdb) | Postgres with pgvector; a Redis-compatible key-value store; a MongoDB-compatible document database. |
+| [vector](https://github.com/hanzoai/vector) · [index](https://github.com/hanzoai/index) | Vector search for embeddings; full-text, vector, and hybrid retrieval in Rust. |
+| [orm](https://github.com/hanzoai/orm) · [sqlite](https://github.com/hanzoai/sqlite) · [sqlcipher](https://github.com/hanzoai/sqlcipher) | Type-safe generics ORM for Go; encrypted SQLite at rest. |
+| [pubsub](https://github.com/hanzoai/pubsub) · [kafka](https://github.com/hanzoai/kafka) | Event streaming, and a Kafka wire-protocol gateway for it. |
 
-| Repo | What it is |
-|------|------------|
-| [cloud](https://github.com/hanzoai/cloud) | Unified Go binary importing every Hanzo-native subsystem. |
-| [gateway](https://github.com/hanzoai/gateway) | High-performance API gateway at `api.hanzo.ai` — routing, JWT/IAM. |
-| [iam](https://github.com/hanzoai/iam) | Identity & access management — OIDC, JWT, per-brand SSO. |
-| [id](https://github.com/hanzoai/id) | Hosted, per-org login pages for Hanzo IAM. |
-| [base](https://github.com/hanzoai/base) | Multi-tenant SQLite backend with in-process polyglot extensions. |
-| [platform](https://github.com/hanzoai/platform) | Unified PaaS for deploying AI applications. |
-| [console](https://github.com/hanzoai/console) | Admin console for Hanzo Cloud and every cloud product. |
-| [chat](https://github.com/hanzoai/chat) | AI chat with MCP integration and multi-provider support. |
-| [bot](https://github.com/hanzoai/bot) | Personal AI assistant across WhatsApp, Telegram, and more. |
-| [search](https://github.com/hanzoai/search) | AI-powered search with a generative UI. |
-| [commerce](https://github.com/hanzoai/commerce) | AI-powered e-commerce platform. |
-| [vault](https://github.com/hanzoai/vault) | PCI-compliant card tokenization vault. |
-| [functions](https://github.com/hanzoai/functions) | Serverless compute for event-driven workloads. |
-| [vector](https://github.com/hanzoai/vector) | High-performance vector database for AI embeddings. |
+---
+
+## Infrastructure
+
+| | What it is |
+|---|---|
+| [ingress](https://github.com/hanzoai/ingress) | Kubernetes-native L7 proxy and load balancer with automatic TLS. |
+| [dns](https://github.com/hanzoai/dns) | Programmable DNS — CoreDNS with Hanzo plugins. |
+| [git](https://github.com/hanzoai/git) | Self-hosted Git, code review, package registry, and CI in one service. |
+| [ci](https://github.com/hanzoai/ci) · [cd](https://github.com/hanzoai/cd) · [pack](https://github.com/hanzoai/pack) | Build, test, and deploy any repo from one `hanzo.yml`; declarative CD for Kubernetes; zero-config BuildKit builds. |
 | [registry](https://github.com/hanzoai/registry) | Container registry with Hanzo IAM token auth. |
-
-Secrets & keys are managed by **KMS** at [kms.hanzo.ai](https://kms.hanzo.ai).
-
----
-
-## Infrastructure & OSS
-
-Cloud-native building blocks — open source, composable, one way to do each thing.
-
-| Repo | What it is |
-|------|------------|
-| [ingress](https://github.com/hanzoai/ingress) | Kubernetes-native L7 reverse proxy and load balancer. |
-| [static](https://github.com/hanzoai/static) | Feature-rich static file server as an Ingress plugin. |
-| [operator](https://github.com/hanzoai/operator) | Kubernetes operator for Gateway and Ingress. |
-| [s3](https://github.com/hanzoai/s3) | S3-compatible distributed object storage. |
-| [sqlite](https://github.com/hanzoai/sqlite) | Encrypted SQLite driver for at-rest data protection. |
-| [replicate](https://github.com/hanzoai/replicate) | Streaming replication for SQLite. |
-| [orm](https://github.com/hanzoai/orm) | Generics-based, type-safe ORM for Go. |
-| [authz](https://github.com/hanzoai/authz) | Access-control library for Go — ACL, RBAC, ABAC. |
-| [dns](https://github.com/hanzoai/dns) | CoreDNS fork with Hanzo plugins for programmable DNS. |
-| [o11y](https://github.com/hanzoai/o11y) | OpenTelemetry-native observability — metrics, traces, logs. |
-| [analytics](https://github.com/hanzoai/analytics) | Privacy-focused web analytics. |
-| [flow](https://github.com/hanzoai/flow) | Visual drag-and-drop AI workflow builder. |
-| [git](https://github.com/hanzoai/git) | Self-hosted all-in-one software-development service. |
-
-**Developer tools:** [cli](https://github.com/hanzoai/cli) ·
-[dev](https://github.com/hanzoai/dev) ·
-[code](https://github.com/hanzoai/code) ·
-[desktop](https://github.com/hanzoai/desktop) ·
-[app](https://github.com/hanzoai/app) &nbsp;&nbsp;
-**UI:** [ui](https://github.com/hanzoai/ui) ·
-[gui](https://github.com/hanzoai/gui) ·
-[theming](https://github.com/hanzoai/theming)
+| [mail](https://github.com/hanzoai/mail) | Self-hosted mail — SMTP, IMAP, webmail, DKIM/SPF/DMARC. |
 
 ---
 
-## Zen models
+## Applications
 
-**Zen** is our own frontier model family, spanning **600M – 480B** parameters —
-built on **Zen MoDE (Mixture of Diverse Experts)**. Text, vision, audio, and
-tool-use, tuned for agents and served through the Hanzo Cloud.
+Complete products, open source, running on the stack above.
 
-→ [hanzoai/zen](https://github.com/hanzoai/zen)
+[cms](https://github.com/hanzoai/cms) · [erp](https://github.com/hanzoai/erp) ·
+[helpdesk](https://github.com/hanzoai/helpdesk) · [esign](https://github.com/hanzoai/esign) ·
+[captable](https://github.com/hanzoai/captable) · [dataroom](https://github.com/hanzoai/dataroom) ·
+[cal](https://github.com/hanzoai/cal) · [social](https://github.com/hanzoai/social) ·
+[world](https://github.com/hanzoai/world) · [tabs](https://github.com/hanzoai/tabs) ·
+[frames](https://github.com/hanzoai/frames)
+
+## Design
+
+[ui](https://github.com/hanzoai/ui) · [gui](https://github.com/hanzoai/gui) ·
+[shadcn](https://github.com/hanzoai/shadcn) · [svelte](https://github.com/hanzoai/svelte) ·
+[design](https://github.com/hanzoai/design) · [brand](https://github.com/hanzoai/brand) ·
+[logo](https://github.com/hanzoai/logo) · [gallery](https://github.com/hanzoai/gallery)
+
+## Go libraries
+
+Small, single-purpose, no framework attached.
+
+[money](https://github.com/hanzoai/money) · [decimal](https://github.com/hanzoai/decimal) ·
+[doctype](https://github.com/hanzoai/doctype) · [framework](https://github.com/hanzoai/framework) ·
+[migrate](https://github.com/hanzoai/migrate) · [notify](https://github.com/hanzoai/notify) ·
+[research](https://github.com/hanzoai/research)
 
 ---
 
 <div align="center">
 
-**[hanzo.ai](https://hanzo.ai)** · **[docs.hanzo.ai](https://docs.hanzo.ai)** · **[cloud.hanzo.ai](https://cloud.hanzo.ai)**
+Read the [papers](https://github.com/hanzoai/papers) · Ship on [cloud.hanzo.ai](https://cloud.hanzo.ai)
 
-_Hanzo AI, Inc. — Techstars '17. Building the Open AI Cloud._
+Hanzo AI, Inc. — Techstars '17
 
 </div>
