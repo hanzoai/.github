@@ -14,22 +14,27 @@ Everything below is open source. The same code runs our cloud and yours.
 
 ## Start here — the local stack
 
-Most AI platforms give you an API key. We give you the platform. Install one
-binary and you have inference, agents, tools, and storage running locally, with
-no account and no network call.
+Most AI platforms give you an API key. We give you the platform. One binary, and
+`hanzo serve` brings up the cloud itself on your own hardware.
 
 ```bash
 curl -fsSL https://hanzo.sh | sh     # the CLI, the MCP server, the coding agent
 hanzo                                # an AI engineer in your terminal
+
+hanzo serve cloud|iam|kms|gateway|storage|pubsub   # the cloud, on your machine
+hanzo engine serve <model>                          # an OpenAI-compatible endpoint, local
 ```
 
+`hanzo-node` is not a second program — the installer writes it as a symlink to
+the same binary. `engine serve` needs the engine on `PATH`; it is a separate
+install and the command tells you so.
+
 Prefer a window to a prompt? [Download Hanzo Desktop](https://github.com/hanzoai/desktop/releases)
-— it ships the node and the inference engine inside the app, so it works offline
-on the first launch.
+— it ships the agent node inside the app and talks to the engine for inference.
 
 | | What it is |
 |---|---|
-| **[desktop](https://github.com/hanzoai/desktop)** | The whole stack as a desktop app. Bundles the agent node and the inference engine as sidecars — install it and you are running local AI, no config. macOS · Windows · Linux. |
+| **[desktop](https://github.com/hanzoai/desktop)** | The whole stack as a desktop app. The agent node ships inside the bundle as a sidecar; inference comes from the engine, local or on your LAN. macOS · Windows · Linux. |
 | **[cli](https://github.com/hanzoai/cli)** | One static Rust binary: an AI coding agent, and every product of the Hanzo cloud from the terminal. No runtime, no daemon. |
 | **[engine](https://github.com/hanzoai/engine)** | The inference engine. Fast, flexible LLM and embedding serving in Rust — the thing that actually runs the model. |
 | **[ml](https://github.com/hanzoai/ml)** | The compute core underneath it: multi-backend tensors for Rust across CPU · CUDA · Metal · ROCm · Vulkan, quantization built in. |
