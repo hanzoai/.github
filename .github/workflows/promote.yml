@@ -73,9 +73,18 @@ on:
         default: "infra/k8s/operator/crs"
         type: string
       e2e-enabled:
-        description: "Run the E2E stage. When false, promotion STILL requires a green staging rollout."
-        default: true
-        type: boolean
+        description: >-
+          Run the E2E stage. When 'false', promotion STILL requires a green
+          staging rollout.
+
+          STRING, NOT BOOLEAN. git.hanzo.ai resolves every `type: boolean`
+          workflow_call input to false — an explicitly passed `true` included
+          (measured, z/ci-boolinput-probe run 30590) — so as a boolean this
+          gate was false on every run and the E2E stage below never once
+          executed, while promotion reported success. Compared against 'false'
+          so omission still means run.
+        default: 'true'
+        type: string
       kube-context:
         description: "Optional kubectl context (do-sfo3-hanzo-k8s has same-named decoys on lux-k8s runners). Empty = runner default."
         default: ""
@@ -207,7 +216,7 @@ jobs:
   # Skipped only when e2e-enabled=false; a failing suite BLOCKS promotion.
   e2e:
     needs: stage
-    if: ${{ needs.stage.result == 'success' && inputs.e2e-enabled }}
+    if: ${{ needs.stage.result == 'success' && inputs.e2e-enabled != 'false' }}
     runs-on: [self-hosted, linux, amd64]
     timeout-minutes: 20
     permissions:
