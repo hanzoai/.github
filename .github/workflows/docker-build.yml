@@ -108,17 +108,43 @@ on:
         default: "linux/amd64"
         type: string
       push:
-        description: "Push images to registry"
-        default: true
-        type: boolean
+        description: >-
+          Push images to registry. Default 'true'.
+
+          STRING, NOT BOOLEAN, AND THAT IS LOAD-BEARING. git.hanzo.ai resolves
+          EVERY `type: boolean` workflow_call input to false — not just an
+          omitted one carrying a default, but an explicitly passed `true` as
+          well. Measured in isolation (z/ci-boolinput-probe, run 30590): a
+          caller that omits it and a caller passing `with: {push: true}` BOTH
+          printed `false`, while the `platforms` string input in the same
+          workflow resolved to its declared default correctly. The cause is one
+          line in the runner's vendored act — `runner/expression.go` compares an
+          `any` holding a real Go bool against the string literal "true", and
+          `any(true) == "true"` is false in Go.
+
+          The damage is silent, because a false `push` skips the publish rather
+          than failing it: hanzoai/replicate's last two builds here (runs 16986
+          and 27405) both reported build-amd64 SUCCESS and pushed nothing —
+          ghcr.io/hanzoai/replicate has no sha-b44d327*, no sha-c823047*, and
+          nothing at all for 0.9.5 through 0.9.8.
+
+          Compared against 'false' rather than truthiness so a caller writing
+          `push: ${{ github.event_name != 'pull_request' }}` — which renders the
+          strings "true"/"false" — keeps working unchanged.
+        default: 'true'
+        type: string
       pre-build-command:
         description: "Shell command to run before docker buildx build (e.g. 'go build -o dns-server ./cmd/dns')"
         default: ""
         type: string
       deploy:
-        description: "Deploy after build (kubectl set image to the just-built tag)"
-        default: false
-        type: boolean
+        description: >-
+          Deploy after build (kubectl set image to the just-built tag).
+          Default 'false'. String for the same reason as `push` above; opted
+          into with the exact string 'true', so a boolean-resolving-to-false
+          runner keeps this OFF rather than turning it on by accident.
+        default: 'false'
+        type: string
       deploy-deployment:
         description: "K8s deployment name"
         default: ""
@@ -160,9 +186,15 @@ on:
         default: '["hanzo-build-linux-amd64"]'
         type: string
       sbom:
-        description: "Generate a Software Bill of Materials (syft → SPDX + CycloneDX) for the pushed image, upload it as a workflow artifact, and attach it to the image in the registry (cosign). Powers OSS revenue-share attribution (deployed image → components → contributors). Non-blocking; set false to skip."
-        default: true
-        type: boolean
+        description: >-
+          Generate a Software Bill of Materials (syft → SPDX + CycloneDX) for
+          the pushed image, upload it as a workflow artifact, and attach it to
+          the image in the registry (cosign). Powers OSS revenue-share
+          attribution (deployed image → components → contributors).
+          Non-blocking; set 'false' to skip. String for the same reason as
+          `push` above.
+        default: 'true'
+        type: string
 
     outputs:
       amd64-digest:
@@ -317,9 +349,9 @@ jobs:
           # The buildcache-* tags are cache manifests, never deployable
           # images, so the semver-only tag policy does not apply to them.
           cache-from: type=registry,ref=${{ inputs.cache-key || inputs.image }}:buildcache-amd64
-          cache-to: ${{ inputs.push && format('type=registry,ref={0}:buildcache-amd64,mode=max', inputs.cache-key || inputs.image) || '' }}
+          cache-to: ${{ inputs.push != 'false' && format('type=registry,ref={0}:buildcache-amd64,mode=max', inputs.cache-key || inputs.image) || '' }}
           provenance: false
-          push: ${{ inputs.push }}
+          push: ${{ inputs.push != 'false' }}
           # Private cross-repo deps (hanzoai/*, luxfi/*): expose the org PAT as
           # BuildKit secrets in the two shapes Dockerfiles consume — a raw token
           # (id=gh_token, e.g. Go module url.insteadOf auth) and a ready-made
@@ -336,6 +368,37 @@ jobs:
           secrets: |
             gh_token=${{ secrets.GH_PAT || secrets.GHCR_TOKEN }}
             netrc=machine github.com login x-access-token password ${{ secrets.GH_PAT || secrets.GHCR_TOKEN }}
+
+      # A push that pushed nothing must not read as success. buildx exits 0
+      # when `push` is false, and for a whole window this workflow resolved
+      # `push` to false on EVERY run (see that input's description), so green
+      # builds shipped no bytes and nobody found out until a deploy pinned a
+      # tag that did not exist. Ask the registry instead of trusting the step.
+      - name: Verify the pushed image resolves
+        if: inputs.push != 'false'
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          set -euo pipefail
+          if [ -z "${TAGS//[[:space:]]/}" ]; then
+            echo "::error::push was requested but metadata produced no tags"
+            exit 1
+          fi
+          fail=0
+          for img in $TAGS; do
+            ok=0
+            for _ in 1 2 3 4 5 6; do
+              if docker buildx imagetools inspect "$img" >/dev/null 2>&1; then ok=1; break; fi
+              sleep 5
+            done
+            if [ "$ok" = 1 ]; then
+              echo "resolved $img"
+            else
+              echo "::error::pushed image never resolved: $img"
+              fail=1
+            fi
+          done
+          exit "$fail"
 
   # ── arm64 (native arcd runner — spark matches [self-hosted, linux, arm64]) ──
   build-arm64:
@@ -421,9 +484,9 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           # See the amd64 job — type=gha cannot work on this forge.
           cache-from: type=registry,ref=${{ inputs.cache-key || inputs.image }}:buildcache-arm64
-          cache-to: ${{ inputs.push && format('type=registry,ref={0}:buildcache-arm64,mode=max', inputs.cache-key || inputs.image) || '' }}
+          cache-to: ${{ inputs.push != 'false' && format('type=registry,ref={0}:buildcache-arm64,mode=max', inputs.cache-key || inputs.image) || '' }}
           provenance: false
-          push: ${{ inputs.push }}
+          push: ${{ inputs.push != 'false' }}
           # Private cross-repo deps (hanzoai/*, luxfi/*): expose the org PAT as
           # BuildKit secrets in the two shapes Dockerfiles consume — a raw token
           # (id=gh_token, e.g. Go module url.insteadOf auth) and a ready-made
@@ -433,6 +496,37 @@ jobs:
           secrets: |
             gh_token=${{ secrets.GH_PAT || secrets.GHCR_TOKEN }}
             netrc=machine github.com login x-access-token password ${{ secrets.GH_PAT || secrets.GHCR_TOKEN }}
+
+      # A push that pushed nothing must not read as success. buildx exits 0
+      # when `push` is false, and for a whole window this workflow resolved
+      # `push` to false on EVERY run (see that input's description), so green
+      # builds shipped no bytes and nobody found out until a deploy pinned a
+      # tag that did not exist. Ask the registry instead of trusting the step.
+      - name: Verify the pushed image resolves
+        if: inputs.push != 'false'
+        env:
+          TAGS: ${{ steps.meta.outputs.tags }}
+        run: |
+          set -euo pipefail
+          if [ -z "${TAGS//[[:space:]]/}" ]; then
+            echo "::error::push was requested but metadata produced no tags"
+            exit 1
+          fi
+          fail=0
+          for img in $TAGS; do
+            ok=0
+            for _ in 1 2 3 4 5 6; do
+              if docker buildx imagetools inspect "$img" >/dev/null 2>&1; then ok=1; break; fi
+              sleep 5
+            done
+            if [ "$ok" = 1 ]; then
+              echo "resolved $img"
+            else
+              echo "::error::pushed image never resolved: $img"
+              fail=1
+            fi
+          done
+          exit "$fail"
 
   # ── Multi-platform manifest (both platforms) ─────────────────
   #
@@ -457,7 +551,7 @@ jobs:
   create-manifest:
     if: >-
       always() &&
-      inputs.push &&
+      inputs.push != 'false' &&
       contains(inputs.platforms, 'linux/amd64') &&
       contains(inputs.platforms, 'linux/arm64')
     runs-on: ${{ fromJson(inputs.runner-amd64) }}
@@ -554,6 +648,33 @@ jobs:
         env:
           DOCKER_METADATA_OUTPUT_JSON: ${{ steps.meta.outputs.json }}
 
+      # The clean :X.Y.Z tag is what every consumer pins. Prove it exists.
+      - name: Verify the composed manifest resolves
+        env:
+          DOCKER_METADATA_OUTPUT_JSON: ${{ steps.meta.outputs.json }}
+        run: |
+          set -euo pipefail
+          mapfile -t TAGS < <(jq -r '.tags[]' <<< "$DOCKER_METADATA_OUTPUT_JSON")
+          if [ "${#TAGS[@]}" -eq 0 ]; then
+            echo "::error::manifest job ran but metadata produced no tags"
+            exit 1
+          fi
+          fail=0
+          for img in "${TAGS[@]}"; do
+            ok=0
+            for _ in 1 2 3 4 5 6; do
+              if crane manifest "$img" >/dev/null 2>&1; then ok=1; break; fi
+              sleep 5
+            done
+            if [ "$ok" = 1 ]; then
+              echo "resolved $img"
+            else
+              echo "::error::composed manifest never resolved: $img"
+              fail=1
+            fi
+          done
+          exit "$fail"
+
   # ── Tag single-arch image (when only one platform is built) ──
   #
   # When only amd64 OR arm64 is requested, create-manifest is
@@ -567,7 +688,7 @@ jobs:
   tag-single-arch:
     if: >-
       always() &&
-      inputs.push &&
+      inputs.push != 'false' &&
       !(contains(inputs.platforms, 'linux/amd64') && contains(inputs.platforms, 'linux/arm64')) &&
       (needs.build-amd64.result == 'success' || needs.build-arm64.result == 'success') &&
       !(needs.build-amd64.result == 'failure' || needs.build-arm64.result == 'failure') &&
@@ -630,6 +751,35 @@ jobs:
         env:
           DOCKER_METADATA_OUTPUT_JSON: ${{ steps.meta.outputs.json }}
 
+      # This job is the one that skipped silently on hanzoai/replicate, so the
+      # clean :X.Y.Z tag never appeared while CI stayed green. Now the tag it
+      # claims to have written has to actually be there.
+      - name: Verify the single-arch tags resolve
+        env:
+          DOCKER_METADATA_OUTPUT_JSON: ${{ steps.meta.outputs.json }}
+        run: |
+          set -euo pipefail
+          mapfile -t TAGS < <(jq -r '.tags[]' <<< "$DOCKER_METADATA_OUTPUT_JSON")
+          if [ "${#TAGS[@]}" -eq 0 ]; then
+            echo "::error::tagging job ran but metadata produced no tags"
+            exit 1
+          fi
+          fail=0
+          for img in "${TAGS[@]}"; do
+            ok=0
+            for _ in 1 2 3 4 5 6; do
+              if docker buildx imagetools inspect "$img" >/dev/null 2>&1; then ok=1; break; fi
+              sleep 5
+            done
+            if [ "$ok" = 1 ]; then
+              echo "resolved $img"
+            else
+              echo "::error::tag never resolved: $img"
+              fail=1
+            fi
+          done
+          exit "$fail"
+
   # ── Deploy (optional) ────────────────────────────────────────
   #
   # Depends on BOTH create-manifest and tag-single-arch.
@@ -643,7 +793,7 @@ jobs:
       always() &&
       (needs.create-manifest.result == 'success' || needs.tag-single-arch.result == 'success') &&
       !(needs.create-manifest.result == 'failure' || needs.tag-single-arch.result == 'failure') &&
-      inputs.deploy && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
+      inputs.deploy == 'true' && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/'))
     runs-on: ${{ fromJson(inputs.runner-deploy) }}
     needs: [create-manifest, tag-single-arch]
     environment: production
@@ -735,7 +885,7 @@ jobs:
     continue-on-error: true
     if: >-
       always() &&
-      inputs.push && inputs.sbom &&
+      inputs.push != 'false' && inputs.sbom != 'false' &&
       (needs.create-manifest.result == 'success' || needs.tag-single-arch.result == 'success')
     runs-on: ${{ fromJson(inputs.runner-amd64) }}
     needs: [create-manifest, tag-single-arch]
