@@ -1,0 +1,28 @@
+# hanzoai/.github — the org's workflow API and profile repo. It builds no
+# binary and ships no image: ITS PRODUCT IS WORKFLOWS. ~90 repos resolve
+# `uses: hanzoai/.github/.github/workflows/<n>.yml@main` against this tree, so a
+# YAML typo here breaks OTHER repos' builds and leaves this one green. That is
+# what the gate has to catch.
+#
+#   actionlint — every shipped workflow, on both planes (.github/workflows for
+#     github.com, .hanzo/workflows for git.hanzo.ai), parsed and typechecked:
+#     bad expressions, unknown contexts, malformed `on:`/`uses:`. -shellcheck=
+#     because shellcheck is not on the runner image and the shell in these files
+#     is curl one-liners, not programs.
+#   scripts/workflow-law.py — the native-CI law this org runs on: GitHub Actions
+#     is a sync, not an orchestrator. It refuses a GitHub-hosted runs-on (those
+#     are billing-blocked org-wide, so such a job cannot run at all), a
+#     self-firing GitHub workflow that is not the sync nudge, and a tab in a
+#     YAML file.
+#
+# Both are already this repo's native lint.yml; declaring them in hanzo.yml is
+# what puts them on the canonical pair every other repo is being moved to.
+test:
+  - name: actionlint
+    run: |
+      set -euo pipefail
+      v=1.7.11
+      curl -sSfL "https://github.com/rhysd/actionlint/releases/download/v${v}/actionlint_${v}_linux_amd64.tar.gz" | tar -xz actionlint
+      ./actionlint -shellcheck= .github/workflows/*.yml .hanzo/workflows/*.yml
+  - name: native-ci-law
+    run: python3 scripts/workflow-law.py
