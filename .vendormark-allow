@@ -1,0 +1,12 @@
+# Paths exempt from bin/vendormark, one glob per line.
+#
+# This repo holds the history scrubber. Its rule files cannot do their work
+# without spelling the strings they remove — a mailmap that rewrites a
+# generator bot's address has to contain that address. The scripts that
+# compile those rules are in the same position.
+#
+# This is the one honest case the escape hatch exists for. Anything else
+# reaching for this file is about to ship the mark.
+tools/rules/*
+tools/git-hygiene.py
+tools/git-hygiene-org.py
