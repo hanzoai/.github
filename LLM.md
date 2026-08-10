@@ -53,6 +53,31 @@ This repo is the ONE bounded exception: `.github/workflows` also publishes the
 org's reusable workflows (`uses: hanzoai/.github/.github/workflows/<n>.yml@main`,
 ~90 callers). Those are `on: workflow_call` only — an interface, never a runner.
 
+### Two ways to break every caller at once
+
+Both fail with **0 jobs and no log**, which is why they hide. A reusable is an
+interface: a mistake in its header is a mistake in ~90 repos.
+
+- **No `${{ }}` anywhere in the header, not even in prose.** GitHub evaluates
+  templates inside every string scalar, and `workflow_call.inputs.<id>.description`
+  allows no contexts at all. One `${{ github.… }}` in a *comment about* an input
+  is a 422 for every caller: `Unrecognized named-value`. `#` comments are safe,
+  YAML scalars are not. The error reports the line where a folded scalar OPENS,
+  and the sha of the resolved branch head — neither points at the mistake, so
+  read the whole scalar and `git log -p` the file rather than trusting either.
+  `actionlint` catches it; its column is an offset INTO the flattened scalar,
+  so a column of ~1100 on a 100-char file is real, not noise.
+- **Never request a permission no step reads.** A called workflow may only
+  narrow what the caller granted, so a job asking for `id-token: write` kills
+  the run at startup for any caller that did not grant it — and `id-token`
+  defaults to `none`. `docker-build.yml` asked for it in five jobs and read it
+  in none, which silently locked out 30 of 49 callers. Grep the jobs for a real
+  consumer (`cosign sign`, `attest`, `fulcio`, `ACTIONS_ID_TOKEN`) before adding
+  one; `cosign attach sbom` uses registry credentials, not OIDC.
+
+The forge's act-based parser accepts both, so canonical CI stays green while
+every GitHub caller dies. When a reusable is suspect, test it on GitHub.
+
 ## Pointers
 hanzo.ai · docs.hanzo.ai · cloud.hanzo.ai · SDK index `hanzoai/sdk` · spec `hanzoai/openapi`.
 
