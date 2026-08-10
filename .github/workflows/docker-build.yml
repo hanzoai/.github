@@ -212,23 +212,32 @@ on:
         description: "Final manifest tags (JSON)"
         value: ${{ jobs.create-manifest.outputs.tags }}
 
-    # Secrets a reusable workflow REFERENCES must be DECLARED here, or
-    # GitHub rejects it at parse time with
-    #   422 failed to parse workflow: error parsing called workflow
-    # for every caller that doesn't pass them explicitly — which killed
-    # docker-build org-wide at 0s (the `${{ secrets.GCP_CREDENTIAL }}` /
-    # `${{ secrets.GH_PAT }}` references below were undeclared). Declaring
-    # them `required: false` is the canonical fix: the parser is satisfied,
-    # AND cross-org callers that lack the secret still pass validation (it
-    # resolves to empty where absent — the GAR login step gates on
-    # inputs.registry, and gh_token falls back to GITHUB_TOKEN). `secrets:
-    # inherit` continues to flow the real values where the caller has them.
+    # Every secret this workflow reads is declared here, `required: false`,
+    # so a caller can pass it by name. Callers using `secrets: inherit` —
+    # all of ours today — get the real values whether or not a secret is
+    # declared; a caller that passes secrets explicitly can only reach the
+    # ones named below, and anything it omits reads as empty. Empty is
+    # survivable by design: the GAR login step gates on inputs.registry and
+    # gh_token falls back to GITHUB_TOKEN.
+    #
+    # Referencing an undeclared secret is NOT a parse error, despite an
+    # earlier note here saying it was. Measured: at 72ab5c7 GHCR_USER and
+    # GHCR_TOKEN were read but undeclared, and zeekay/ci-parse-probe runs
+    # 31440381116 / 31440383564 both dispatched clean and one ran all six
+    # jobs. The org-wide 422 had a different cause — a `${{ }}` template
+    # in the `push` input's description, see there.
     secrets:
       GCP_CREDENTIAL:
         description: "GCP SA JSON for us-docker.pkg.dev pushes. Optional — only the GCP-registry org provides it; empty elsewhere."
         required: false
       GH_PAT:
         description: "GitHub PAT for private deps during build. Optional — falls back to GITHUB_TOKEN."
+        required: false
+      GHCR_USER:
+        description: "Username for the ghcr.io login. Optional — inherited by every caller today; name it explicitly if you pass secrets one by one."
+        required: false
+      GHCR_TOKEN:
+        description: "Token for the ghcr.io login, and the GH_PAT fallback for private deps. Optional, same as GHCR_USER."
         required: false
 
 # ── Build hygiene ────────────────────────────────────────────────
@@ -250,7 +259,6 @@ jobs:
     permissions:
       packages: write
       contents: read
-      id-token: write
     outputs:
       digest: ${{ steps.build.outputs.digest }}
     steps:
@@ -412,7 +420,6 @@ jobs:
     permissions:
       packages: write
       contents: read
-      id-token: write
     outputs:
       digest: ${{ steps.build.outputs.digest }}
     steps:
@@ -564,7 +571,6 @@ jobs:
     permissions:
       packages: write
       contents: read
-      id-token: write
     outputs:
       tags: ${{ steps.meta.outputs.json }}
     steps:
@@ -703,7 +709,6 @@ jobs:
     permissions:
       packages: write
       contents: read
-      id-token: write
     steps:
       - name: Reset Docker credential store (runner hygiene)
         # Some self-hosted runners carry a leaked Docker Desktop config
@@ -897,7 +902,6 @@ jobs:
     permissions:
       packages: write
       contents: read
-      id-token: write
     steps:
       - name: Reset Docker credential store (runner hygiene)
         run: |
