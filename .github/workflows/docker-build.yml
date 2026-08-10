@@ -128,9 +128,14 @@ on:
           ghcr.io/hanzoai/replicate has no sha-b44d327*, no sha-c823047*, and
           nothing at all for 0.9.5 through 0.9.8.
 
-          Compared against 'false' rather than truthiness so a caller writing
-          `push: ${{ github.event_name != 'pull_request' }}` — which renders the
-          strings "true"/"false" — keeps working unchanged.
+          Compared against 'false' rather than truthiness so a caller that
+          computes push from an expression — say `github.event_name !=
+          'pull_request'`, which renders the strings "true"/"false" — keeps
+          working unchanged. (Write that expression with the usual template
+          braces at the CALL SITE. It cannot be shown here: GitHub evaluates
+          templates inside every string scalar, `description` allows no
+          contexts at all, and one appearing here fails the whole reusable at
+          parse time for every caller — 422 Unrecognized named-value.)
         default: 'true'
         type: string
       pre-build-command:
