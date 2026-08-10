@@ -221,11 +221,12 @@ on:
     # gh_token falls back to GITHUB_TOKEN.
     #
     # Referencing an undeclared secret is NOT a parse error, despite an
-    # earlier note here saying it was. Measured: at 72ab5c7 GHCR_USER and
-    # GHCR_TOKEN were read but undeclared, and zeekay/ci-parse-probe runs
-    # 31440381116 / 31440383564 both dispatched clean and one ran all six
-    # jobs. The org-wide 422 had a different cause — a `${{ }}` template
-    # in the `push` input's description, see there.
+    # earlier note here saying it was. At 72ab5c7 GHCR_USER and GHCR_TOKEN
+    # were read here but undeclared, and lux-apps/blog run 31440129420
+    # dispatched clean against it — a 422 rejects the dispatch outright and
+    # creates no run at all, so that run existing is the proof. The org-wide
+    # 422 had a different cause: a `${{ }}` template in the `push` input's
+    # description, see there.
     secrets:
       GCP_CREDENTIAL:
         description: "GCP SA JSON for us-docker.pkg.dev pushes. Optional — only the GCP-registry org provides it; empty elsewhere."
