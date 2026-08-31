@@ -33,7 +33,13 @@
 set -uo pipefail
 
 FORGE="https://git.hanzo.ai"
-API="${FORGE}/api/v1"
+# /v1, not /api/v1. The estate does not put an /api/ segment in a path — the
+# host is already api.* or, here, the forge's own name. Probing /api/v1/version
+# returns 404 on this instance and forge_health read that as the forge being
+# down, which stopped every migration while git.hanzo.ai was serving fine. The
+# live route answers 403 unauthenticated, which is a forge that is up and
+# private.
+API="${FORGE}/v1"
 APPLY=0
 ORG_FILTER=""
 REPO_ONE=""
@@ -84,12 +90,18 @@ api() { # method path [json-body]
 
 forge_health() {
   api GET /version
-  if [ "$API_CODE" != "200" ]; then
+  # 401 and 403 are a healthy private forge answering an unauthenticated probe.
+  # Only a transport failure or a 5xx means down; treating "you are not logged
+  # in" as an outage is what made this refuse to run at all.
+  case "$API_CODE" in
+    200 | 401 | 403) : ;;
+    *)
     echo "FORGE DOWN: ${FORGE} returned HTTP ${API_CODE}." >&2
     echo "The hanzo-git deployment (ns hanzo, hanzo-k8s) serves it and is OWNER-managed." >&2
     echo "Do NOT patch/restart/scale it to clear this. Re-run when it is healthy." >&2
     return 1
-  fi
+    ;;
+  esac
   echo "forge OK — gitea $(echo "$API_BODY" | sed 's/.*"version":"\([^"]*\)".*/\1/')"
 }
 
