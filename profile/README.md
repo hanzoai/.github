@@ -105,7 +105,7 @@ run yourself.
 |---|---|
 | [ingress](https://github.com/hanzoai/ingress) | Kubernetes-native L7 proxy and load balancer with automatic TLS. |
 | [dns](https://github.com/hanzoai/dns) | Programmable DNS — CoreDNS with Hanzo plugins. |
-| [git](https://github.com/hanzoai/git) | Self-hosted Git, code review, package registry, and CI in one service. |
+| [forge](https://github.com/hanzoai/forge) | Self-hosted Git, code review, package registry, and CI in one service. |
 | [ci](https://github.com/hanzoai/ci) · [cd](https://github.com/hanzoai/cd) · [pack](https://github.com/hanzoai/pack) | Build, test, and deploy any repo from one `hanzo.yml`; declarative CD for Kubernetes; zero-config BuildKit builds. |
 | [registry](https://github.com/hanzoai/registry) | Container registry with Hanzo IAM token auth. |
 | [mail](https://github.com/hanzoai/mail) | Self-hosted mail — SMTP, IMAP, webmail, DKIM/SPF/DMARC. |

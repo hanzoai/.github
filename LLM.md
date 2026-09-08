@@ -37,7 +37,7 @@ a push happened. Real CI lives in `.hanzo/workflows` and runs on our own runners
 shape: `hanzoai/app`. The law is enforced here by `scripts/workflow-law.py`.
 
 Two facts that decide every migration:
-- **The forge picks ONE workflow dir.** `hanzoai/git`
+- **The forge picks ONE workflow dir.** `hanzoai/forge`
   `modules/actions/workflows.go:listWorkflowsInDirs` walks
   `.hanzo/workflows`, `.gitea/workflows`, `.github/workflows` and BREAKS at the
   first that exists. Once a repo has `.hanzo/workflows`, its `.github/workflows`

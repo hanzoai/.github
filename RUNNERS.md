@@ -76,7 +76,7 @@ keep working unchanged — that is the whole point of the union.
 Replace `<org>` with `hanzo`/`lux`/`zoo`/`pars`/`zen`. Per-host runner
 configs materialise the exact union: `hanzoai/universe:infra/runners/<host>/config.yaml`
 (dbc, spark, evo-wsl, evo-windows) + the in-cluster `infra/k8s/git-runner/statefulset.yaml`
-(`GITEA_RUNNER_LABELS`).
+(`GITEA_RUNNER_LABELS` — the runner binary reserves that name; ours are `FORGE_*`).
 
 ### Documented external / owner-gated pools (NOT on the dbc/evo/spark fleet)
 
