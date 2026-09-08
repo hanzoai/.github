@@ -5,6 +5,7 @@
 self-hosted-runner:
   labels:
     - amd64
+    - linux-amd64
     - hanzo-linux-amd64
     - hanzo-build-linux-amd64
     - hanzo-deploy-linux-amd64
