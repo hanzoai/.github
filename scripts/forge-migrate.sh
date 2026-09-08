@@ -102,7 +102,7 @@ forge_health() {
     return 1
     ;;
   esac
-  echo "forge OK — gitea $(echo "$API_BODY" | sed 's/.*"version":"\([^"]*\)".*/\1/')"
+  echo "forge OK — version $(echo "$API_BODY" | sed 's/.*"version":"\([^"]*\)".*/\1/')"
 }
 
 repos_for() { # workdir -> repo basenames that are git checkouts
@@ -229,7 +229,7 @@ cmd_convert() {
     cat <<EOF
 DRY RUN — would convert ${REPO_ONE} from pull mirror to canonical:
   1. DELETE ${API}/repos/${REPO_ONE}/mirror-sync-config   (stop pulling from GitHub)
-     [Gitea exposes this as PATCH /repos/{o}/{r} {"mirror":false} on 1.26;
+     [The forge exposes this as PATCH /repos/{o}/{r} {"mirror":false} on 1.26;
       confirm against this instance before --apply.]
   2. verify: GET /repos/${REPO_ONE} reports "mirror":false
   3. push a probe commit over HTTPS and confirm it survives >1 mirror tick

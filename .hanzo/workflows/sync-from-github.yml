@@ -5,7 +5,7 @@ name: Sync from GitHub
 # GitHub copy can never be allowed to drift ahead unnoticed).
 #
 # ONE deterministic direction: an in-cluster PULL. The runner reaches both ends
-# — GitHub outbound and this Gitea via the instance URL actions/checkout already
+# — GitHub outbound and this forge via the instance URL actions/checkout already
 # uses — so no ingress dependency. Fast-forward only: a divergence fails LOUDLY
 # here rather than force-pushing either side.
 on:
@@ -19,7 +19,7 @@ jobs:
   ff-main:
     runs-on: [linux-amd64]
     steps:
-      - name: Checkout Gitea main (full history for the ancestry check)
+      - name: Checkout forge main (full history for the ancestry check)
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -50,9 +50,9 @@ jobs:
               -d '{"ref":"main"}' \
               && echo "lint dispatched" || echo "lint dispatch failed (non-fatal — next direct push lints)"
           elif git merge-base --is-ancestor "$REMOTE" "$LOCAL"; then
-            echo "Gitea is AHEAD of GitHub ($REMOTE ancestor of $LOCAL) — nothing to pull."
+            echo "The forge is AHEAD of GitHub ($REMOTE ancestor of $LOCAL) — nothing to pull."
             echo "(GitHub catch-up is a separate concern; never force from here.)"
           else
-            echo "::error::main DIVERGED between GitHub ($REMOTE) and Gitea ($LOCAL) — refusing to force. Reconcile manually."
+            echo "::error::main DIVERGED between GitHub ($REMOTE) and the forge ($LOCAL) — refusing to force. Reconcile manually."
             exit 1
           fi
