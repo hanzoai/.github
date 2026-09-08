@@ -80,6 +80,9 @@ every GitHub caller dies. When a reusable is suspect, test it on GitHub.
 
 ## Pointers
 hanzo.ai · docs.hanzo.ai · cloud.hanzo.ai · SDK index `hanzoai/sdk` · spec `hanzoai/openapi`.
+Conventions — commits, naming, comments, architecture, TypeScript, Go, whitespace — are
+`hanzoai/styleguide` (MIT OR Apache-2.0); `zooai/styleguide` and `luxfi/styleguide` carry
+only their org's delta and point back at it.
 
 ## License
 

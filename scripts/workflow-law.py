@@ -1,14 +1,17 @@
 #!/usr/bin/env python3
 """Enforce the native-CI law on the workflows this repo ships.
 
-THE LAW: `.github/workflows` may do exactly ONE thing — tell git.hanzo.ai that
-a push happened. All real CI lives in `.hanzo/workflows` and runs on our own
-runners (`act_runner`, registered against Hanzo Git).
+THE LAW: nothing under `.github/workflows` orchestrates. All real CI lives in
+`.hanzo/workflows` and runs on our own runners (`act_runner`, registered against
+Hanzo Git).
 
 hanzoai/.github is the ONE bounded exception: it is also the org's reusable-
 workflow API, consumed as `uses: hanzoai/.github/.github/workflows/<n>.yml@main`.
-So a file under `.github/workflows` here is either that API (`workflow_call`
-only — it never fires on its own) or the sync nudge. Nothing else orchestrates.
+A file under `.github/workflows` here is that API — `workflow_call` only, never
+firing on its own. The forge learns about a push by pulling every ten minutes
+(`.hanzo/workflows/sync-from-github.yml`), so a nudge from this side would need
+a GitHub-hosted runner this org cannot buy. `sync.yml` remains the one name
+allowed to self-fire if that ever changes.
 
 Run it anywhere: `python3 scripts/workflow-law.py` (no dependencies).
 """
@@ -62,8 +65,6 @@ for path in sorted(GHA.glob("*.yml")) + sorted(NATIVE.glob("*.yml")):
         elif triggers(text) != {"workflow_call"}:
             fail(path, "self-firing GitHub workflow — only sync.yml may fire; everything else here is `on: workflow_call` API")
 
-if not (GHA / SYNC).exists():
-    failures.append(f"{GHA / SYNC}: missing — GitHub must still tell the canonical forge about a push")
 if not list(NATIVE.glob("*.yml")):
     failures.append(f"{NATIVE}: empty — real CI must exist natively before GitHub Actions is trimmed")
 
