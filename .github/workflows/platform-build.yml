@@ -23,7 +23,7 @@ on:
         required: true
         type: string
       runner-pool:
-        description: "arcd pool label, e.g. hanzoai-linux-amd64"
+        description: "arcd pool label, e.g. linux-amd64"
         required: true
         type: string
       image:

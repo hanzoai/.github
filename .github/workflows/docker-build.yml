@@ -180,7 +180,7 @@ on:
         type: string
       runner-amd64:
         description: "Runner labels for amd64 builds as JSON-array string. Defaults to canonical arcd labels (online DOKS ARC scale-set). Decoded via fromJson at runs-on."
-        default: '["hanzo-build-linux-amd64"]'
+        default: '["linux-amd64"]'
         type: string
       runner-arm64:
         description: "Runner labels for arm64 builds as JSON-array string. Defaults to canonical arcd labels (matches spark). Decoded via fromJson at runs-on."
@@ -188,7 +188,7 @@ on:
         type: string
       runner-deploy:
         description: "Runner labels for deploy jobs as JSON-array string. Defaults to canonical arcd labels. Decoded via fromJson at runs-on."
-        default: '["hanzo-build-linux-amd64"]'
+        default: '["linux-amd64"]'
         type: string
       sbom:
         description: >-
