@@ -61,7 +61,8 @@ Local and cloud are the same API (`/v1/`). Point a client at `localhost` or at
 | [app](https://github.com/hanzoai/app) | Describe an app, get an app. AI web and app builder. |
 | [studio](https://github.com/hanzoai/studio) | Visual AI engine — build pipelines by wiring them up. |
 | [chat](https://github.com/hanzoai/chat) · [bot](https://github.com/hanzoai/bot) | Chat with MCP and any provider; the same assistant on WhatsApp, Telegram, Slack, Discord. |
-| [crawl](https://github.com/hanzoai/crawl) | Web crawling that returns LLM-ready text. |
+| [enso](https://github.com/hanzoai/enso) | Our agentic language model. Ask for `enso` and a learned router sends each request to the model that serves it best. |
+| [crawl](https://github.com/hanzoai/crawl) | Read any web page as clean markdown — Go library, CLI and API. |
 
 ---
 
