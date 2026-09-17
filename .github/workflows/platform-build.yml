@@ -1,15 +1,15 @@
-name: Platform Build (reusable arcd executor)
+name: Platform Build (reusable executor)
 
 # Reusable executor for platform-native CI/CD (docs: platform docs/PLATFORM_CI.md).
 #
 # platform.hanzo.ai owns the build+deploy lifecycle. For the workflow_dispatch
 # dispatch mode it triggers a thin per-repo shim, which delegates here via
 # `uses:`. Keeping the build/push/callback logic in ONE place means a fix lands
-# once — not copied into every repo. The build muscle runs on self-hosted arcd
+# once — not copied into every repo. The build muscle runs on our own runners
 # (the `runner-pool` input), never on GitHub-hosted runners.
 #
 # Repos on the native long-poll dispatch mode need no workflow at all — the
-# platform feeds arcd directly and the repo carries only hanzo.yml.
+# platform feeds the runners directly and the repo carries only hanzo.yml.
 
 on:
   workflow_call:
@@ -23,7 +23,7 @@ on:
         required: true
         type: string
       runner-pool:
-        description: "arcd pool label, e.g. linux-amd64"
+        description: "runner pool label, e.g. linux-amd64"
         required: true
         type: string
       image:
