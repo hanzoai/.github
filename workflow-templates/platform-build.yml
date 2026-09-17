@@ -1,13 +1,13 @@
-name: Platform Build (arcd executor)
+name: Platform Build
 
 # Dispatched by platform.hanzo.ai (NOT by GitHub on push). Platform receives
 # the repo webhook, schedules the build, and triggers this workflow via
-# workflow_dispatch with the inputs below — pinning the arcd runner pool per
+# workflow_dispatch with the inputs below — pinning the runner pool per
 # build target. On completion this workflow calls back into platform, which
 # records the outcome and (on success) rolls the image out via the operator.
 #
 # This is the per-repo half of the platform-native CI/CD escape from GHA as a
-# single point of failure. The build muscle still runs on self-hosted arcd.
+# single point of failure. The build muscle still runs on our own runners.
 
 on:
   workflow_dispatch:
@@ -19,7 +19,7 @@ on:
         description: "Build target, e.g. linux/amd64"
         required: true
       runner-pool:
-        description: "arcd pool label, e.g. hanzoai-linux-amd64"
+        description: "runner pool label, e.g. hanzoai-linux-amd64"
         required: true
       image:
         description: "Fully-resolved image ref, e.g. ghcr.io/hanzoai/zip:<sha>"
