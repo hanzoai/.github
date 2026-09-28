@@ -7,15 +7,15 @@ account; the hosted cloud at `api.hanzo.ai` adds sign-in, billing and hosted mod
 
 ## Models
 
+Zen generates. Enso routes. Kai decides.
+
 | Model | What it is |
 |---|---|
-| [Zen6](https://huggingface.co/zenlm/zen6) | 27B dense model, NVFP4 |
-| [Zen6 Flash](https://huggingface.co/zenlm/zen6-flash) | 27B ternary vision-language model |
-| [Zen6 Coder](https://huggingface.co/zenlm/zen6-coder) | agentic mixture-of-experts for code |
-| [Zen5](https://github.com/zenlm/zen5) | Mixture of Diverse Experts: compute scales with task difficulty |
-| [Enso](https://github.com/hanzoai/enso) | agentic model: a learned router sends each request to the model that serves it best |
+| [Zen](https://hanzo.ai/models/zen) | open-weight model family: language, code, vision, audio, embeddings ([weights](https://huggingface.co/zenlm)) |
+| [Enso](https://hanzo.ai/enso) | routes every call, in every modality, to the model that should take it; one API |
+| [Kai](https://hanzo.ai/kai) | decision model: turns heterogeneous evidence into calibrated, typed, consistent decisions |
 
-[All Zen models](https://huggingface.co/zenlm)
+We build and run these for companies: [hanzo.ai/enterprise](https://hanzo.ai/enterprise) · [hanzo.ai/contact](https://hanzo.ai/contact)
 
 ## Run it on your own machine
 
