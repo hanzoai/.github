@@ -5,6 +5,18 @@ account; the hosted cloud at `api.hanzo.ai` adds sign-in, billing and hosted mod
 
 [hanzo.ai](https://hanzo.ai) · [docs.hanzo.ai](https://docs.hanzo.ai) · [hanzoskills.com](https://hanzoskills.com)
 
+## Models
+
+| Model | What it is |
+|---|---|
+| [Zen6](https://huggingface.co/zenlm/zen6) | 27B dense model, NVFP4 |
+| [Zen6 Flash](https://huggingface.co/zenlm/zen6-flash) | 27B ternary vision-language model |
+| [Zen6 Coder](https://huggingface.co/zenlm/zen6-coder) | agentic mixture-of-experts for code |
+| [Zen5](https://github.com/zenlm/zen5) | Mixture of Diverse Experts: compute scales with task difficulty |
+| [Enso](https://github.com/hanzoai/enso) | agentic model: a learned router sends each request to the model that serves it best |
+
+[All Zen models](https://huggingface.co/zenlm)
+
 ## Run it on your own machine
 
 | Repository | What it is | Start it |
