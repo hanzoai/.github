@@ -1,7 +1,7 @@
 # actionlint config — declare our runner labels so `runs-on` references don't
-# read as "unknown". RUNNERS.md is the taxonomy's source of truth: the canonical
-# label is the compound `<org>-<os>-<arch>`; the purpose labels below are compat
-# aliases act_runner still advertises for workflows written before it.
+# read as "unknown". The canonical label is the compound `<org>-<os>-<arch>`;
+# the purpose labels below are compat aliases act_runner still advertises for
+# workflows written before it.
 self-hosted-runner:
   labels:
     - amd64

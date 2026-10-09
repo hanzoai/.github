@@ -33,7 +33,7 @@ npm  install @hanzo/ai     # TypeScript / JavaScript
 ## CI (hard) — `.github/workflows` is a sync, not an orchestrator
 A repo's `.github/workflows` holds exactly ONE file: a nudge telling git.hanzo.ai
 a push happened. Real CI lives in `.hanzo/workflows` and runs on our own runners
-(`hanzo-linux-amd64` and friends — RUNNERS.md is the label taxonomy). Reference
+(`hanzo-linux-amd64` and friends). Reference
 shape: `hanzoai/app`. The law is enforced here by `scripts/workflow-law.py`.
 
 Two facts that decide every migration:

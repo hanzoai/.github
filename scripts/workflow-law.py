@@ -28,8 +28,8 @@ SYNC = "sync.yml"
 # GitHub-hosted runner images. Never ours, and on this org not even available:
 # a GitHub-hosted job is refused outright — "recent account payments have failed
 # or your spending limit needs to be increased" (measured on hanzoai/commerce,
-# 2026-07-25). Every job we run, including the one-curl nudge, belongs on a pool
-# from RUNNERS.md. On git.hanzo.ai act_runner does advertise these names as
+# 2026-07-25). Every job we run, including the one-curl nudge, belongs on one of
+# our own pools. On git.hanzo.ai act_runner does advertise these names as
 # compat aliases, so a stray `ubuntu-latest` there silently means "whatever the
 # runner decides" instead of a named capability.
 HOSTED = re.compile(r"^\s*runs-on:\s*\[?\s*['\"]?(ubuntu|macos|windows)-", re.M)
@@ -56,7 +56,7 @@ for path in sorted(GHA.glob("*.yml")) + sorted(NATIVE.glob("*.yml")):
         fail(path, "tab character (YAML must be space-indented)")
 
     if HOSTED.search(text):
-        fail(path, "GitHub-hosted runner — jobs run on our pools (RUNNERS.md); GitHub-hosted minutes are billing-blocked for this org")
+        fail(path, "GitHub-hosted runner — jobs run on our pools; GitHub-hosted minutes are billing-blocked for this org")
 
     if path.parent == GHA:
         if path.name == SYNC:
