@@ -1,0 +1,4 @@
+# Sponsor button default for every repository in this organization
+# that does not ship its own FUNDING.yml. Money goes to @hanzoai —
+# the only Hanzo-family org with GitHub Sponsors enabled.
+github: [hanzoai]
