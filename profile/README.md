@@ -100,7 +100,73 @@ Sovereign Data Plane        hanzoai/egress
 
 ---
 
-## Master Repository Catalog
+## Cryptography & Key Management: Split MPC & Hardware Security
+
+Governed by [**HIP-0136: One Secret, One Path**](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0136-one-secret-one-path.md) and [**HIP-0409: KMS CRD**](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0409-kms-crd.md), **Hanzo KMS** (`kms.hanzo.ai`, [`hanzoai/kms`](https://github.com/hanzoai/kms)) is a thin, high-performance Go service layered over [`luxfi/kms`](https://github.com/luxfi/kms) and [`luxfi/mpc`](https://github.com/luxfi/mpc):
+
+```
+                       Hanzo KMS (kms.hanzo.ai)
+                                  │
+    ┌─────────────────────────────┼─────────────────────────────┐
+    ▼                             ▼                             ▼
+1. SPLIT MPC BACKEND        2. OPTIONAL HARDWARE HSM       3. ENVELOPE ENCRYPTION
+Threshold Secret Sharing    Physical Security Modules     Local Hardware Accelerated
+• FROST (Schnorr threshold) • PKCS#11 / YubiHSM           • AES-256-GCM / Poly1305
+• CGGMP21 (ECDSA threshold) • AWS CloudHSM                • SQLCipher 4 At-Rest Engine
+• Pulsar (Ring-LWE PQ)      • Google Cloud KMS / Azure    • Memory-only Grant Decryption
+```
+
+* **Split MPC Backend**: Private master keys never exist on a single machine. Key shares are computed and distributed across independent threshold nodes via **FROST** (Schnorr), **CGGMP21** (ECDSA), and **Pulsar** (Ring-LWE lattice post-quantum threshold signatures).
+* **Optional Hardware HSM**: Enterprise deployments can bind root keys to dedicated hardware security modules via standard **PKCS#11**, **YubiHSM**, **AWS CloudHSM**, or cloud key vaults.
+* **Post-Quantum Cryptography Suite**: Implements **ML-KEM-768** (Kyber key encapsulation), **ML-DSA-65** (Dilithium digital signatures), and **Pulsar** to protect data against store-now-decrypt-later nation-state adversaries.
+* **Zero Plaintext In-Transit / At-Rest**: Databases never store plaintext credentials. Services authenticate using Kubernetes ServiceAccount tokens; `secret.Boot` reads scoped secrets directly into RAM at runtime.
+
+---
+
+## The Dual-Repo SDK Architecture
+
+To ensure high performance across every ecosystem without code duplication, Hanzo employs a **dual-repository SDK model**:
+* **Top-Level Discovery (`hanzoai/<lang>-sdk`)**: The canonical developer entrance, idiomatic wrappers, documentation, and package metadata.
+* **True Implementation Home (`hanzo-<lang>/sdk`)**: The underlying native source code, toolchain-specific build configurations, and compiler pipelines generated directly from `api.hanzo.ai/v1/openapi.json` via [HIP-0139](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0139-capability.md).
+
+| Language | Canonical Entry Repo | Implementation Home | Package Registry | Installation |
+| :--- | :--- | :--- | :--- | :--- |
+| **Python** | [**hanzoai/python-sdk**](https://github.com/hanzoai/python-sdk) | [**hanzo-py/sdk**](https://github.com/hanzo-py/sdk) | PyPI (`hanzoai`) | `pip install "hanzoai>=8"` |
+| **TypeScript / JS**| [**hanzoai/js-sdk**](https://github.com/hanzoai/js-sdk) | [**hanzo-js/sdk**](https://github.com/hanzo-js/sdk) | npm (`hanzoai`, `@hanzo/ai`)| `npm i hanzoai` |
+| **Go** | [**hanzoai/go-sdk**](https://github.com/hanzoai/go-sdk) | [**hanzo-go/sdk**](https://github.com/hanzo-go/sdk) | Go Modules | `go get github.com/hanzo-go/sdk` |
+| **Rust** | [**hanzoai/rust-sdk**](https://github.com/hanzoai/rust-sdk) | [**hanzo-rs/sdk**](https://github.com/hanzo-rs/sdk) | crates.io (`hanzo`) | `cargo add hanzo` |
+| **C++** | [**hanzoai/cpp-sdk**](https://github.com/hanzoai/cpp-sdk) | [**hanzo-cpp/sdk**](https://github.com/hanzo-cpp/sdk) | CMake / vcpkg | `#include <hanzo/client.hpp>` |
+| **Swift** | [**hanzoai/swift-sdk**](https://github.com/hanzoai/swift-sdk) | [**hanzo-swift/sdk**](https://github.com/hanzo-swift/sdk) | Swift Package Manager | `.package(url: "...", ...)` |
+| **Dart / Flutter**| [**hanzoai/dart-sdk**](https://github.com/hanzoai/dart-sdk) | [**hanzo-dart/sdk**](https://github.com/hanzo-dart/sdk) | pub.dev (`hanzo`) | `dart pub add hanzo` |
+| **Kotlin** | [**hanzoai/kotlin-sdk**](https://github.com/hanzoai/kotlin-sdk) | [**hanzo-kt/sdk**](https://github.com/hanzo-kt/sdk) | Maven Central | `implementation("ai.hanzo:sdk")`|
+| **Java** | [**hanzoai/java-sdk**](https://github.com/hanzoai/java-sdk) | [**hanzo-java/sdk**](https://github.com/hanzo-java/sdk) | Maven Central | `<groupId>ai.hanzo</groupId>` |
+| **Common Lisp** | [**hanzo-cl**](https://github.com/hanzo-cl) | [**hanzo-cl/sdk**](https://github.com/hanzo-cl/sdk) | Quicklisp | `(ql:quickload :hanzo)` |
+
+---
+
+## The 70+ Hanzo GitHub Organizations
+
+The Hanzo ecosystem is organized across specialized, purpose-driven GitHub organizations:
+
+| Domain | Organizations | Primary Responsibility |
+| :--- | :--- | :--- |
+| **Core Platforms** | `hanzoai`, `hanzo-core`, `hanzohq`, `hanzo-labs`, `hanzoworks`, `hanzo-community` | Open-source platform cores, control plane, experimental labs, and community extensions |
+| **Language SDKs** | `hanzo-py`, `hanzo-js`, `hanzo-go`, `hanzo-rs`, `hanzo-cpp`, `hanzo-swift`, `hanzo-dart`, `hanzo-kt`, `hanzo-kotlin`, `hanzo-java`, `hanzo-cl` | Native language SDK implementation repositories and package generators |
+| **Identity & Security** | `hanzoiam`, `hanzoid`, `hanzokms`, `hanzompc`, `hanzozt` | Sovereign identity (`hanzo.id`), key custody (`kms.hanzo.ai`), MPC ceremonies, zero-trust overlay |
+| **Data & Storage** | `hanzodb`, `hanzosql`, `hanzokv`, `hanzos3`, `hanzo-ds`, `hanzodocdb` | PostgreSQL engines, in-memory KV, S-Chain object store, ClickHouse OLAP, document DBs |
+| **Models & Compute** | `hanzo-ml`, `hanzolm`, `hanzo-lm`, `hanzovm` | Zen model family weights, Rust tensor libraries, inference acceleration, virtualization |
+| **Agents & Workflows**| `hanzo-studio`, `hanzobot`, `hanzoteam`, `hanzochat`, `hanzoskills`, `hanzoskill` | AI Studio, bot gateways (WhatsApp/Telegram), team workspaces, atomic skill discovery |
+| **Client Applications**| `hanzoapp`, `hanzo-app`, `hanzo-apps` | Production web applications, user consoles, and client frontends |
+| **UI & Styling** | `hanzoui`, `hanzogui` | Universal component library (`@hanzo/ui`) and optimizing style compiler (`@hanzo/gui`) |
+| **DevOps & Delivery** | `hanzocd`, `hanzo-git`, `hanzocr`, `hanzodns`, `hanzo-templates`, `hanzo-os` | Continuous delivery (`cd.hanzo.ai`), Git Forge (`forge.hanzo.ai`), OCI registry (`oci.hanzo.ai`), DNS |
+| **Telemetry & Signals**| `hanzoo11y`, `hanzolog`, `hanzometric`, `hanzomsg`, `hanzofn` | Observability pipelines over ZAP, metrics stores, pub/sub messaging, serverless functions |
+| **Blockchain & Fi** | `hanzonet`, `hanzonetwork`, `hanzodao`, `hanzo-fi`, `hanzo-industries`, `hanzo-agency` | Hanzo validator network, consensus nodes, DeFi primitives, and specialized vertical solutions |
+| **Documentation** | `hanzodocs`, `hanzo-docs` | Documentation sites, LLM context indexes, and OpenAPI specifications |
+| **Enterprise Enclaves**| `hanzo-inc` | Proprietary cloud platform, private hardware kernels, and member-only enclaves |
+
+---
+
+## Master Repository Catalog (`hanzoai/*`)
 
 ### 1. Edge, Traffic, Security & Cloud Control Plane
 | Repository | Documentation | Specification | Description |
@@ -180,19 +246,7 @@ Sovereign Data Plane        hanzoai/egress
 | [**team**](https://github.com/hanzoai/team) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1048](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1048-team.md) | Sovereign team collaboration platform (`hanzo.team`) |
 | [**bot**](https://github.com/hanzoai/bot) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1107](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1107-bot-runs-on-a-surface.md) | Multi-channel personal assistant gateway (`hanzo.bot`) |
 
-### 8. Developer CLI & Client SDKs
-| Repository | Documentation | Specification | Description |
-| :--- | :--- | :--- | :--- |
-| [**cli**](https://github.com/hanzoai/cli) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Sovereign `hanzo` command-line interface in Rust |
-| [**python-sdk**](https://github.com/hanzoai/python-sdk) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0301](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0301-python-sdk-agent-runtime-protocols.md) | Official Python SDK (`pip install "hanzoai>=8"`) |
-| [**js-sdk**](https://github.com/hanzoai/js-sdk) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Official TypeScript/Node SDK (`npm i hanzoai`) |
-| [**go-sdk**](https://github.com/hanzo-go/sdk) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Official Go SDK |
-| [**rust-sdk**](https://github.com/hanzo-rs/sdk) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Official Rust SDK |
-| [**cpp-sdk**](https://github.com/hanzo-cpp/sdk) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Official C++ SDK |
-| [**swift-sdk**](https://github.com/hanzo-swift/swift-sdk) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Official Swift SDK |
-| [**dart-sdk**](https://github.com/hanzo-dart/dart-sdk) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Official Dart SDK |
-
-### 9. Sovereign DevOps & Delivery Fleet
+### 8. Sovereign DevOps & Delivery Fleet
 | Repository | Documentation | Specification | Description |
 | :--- | :--- | :--- | :--- |
 | [**git**](https://github.com/hanzoai/git) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1328](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1328-forge-the-meta-code-host.md) | Hanzo Forge git server and GitHub overlay (`forge.hanzo.ai`) |
@@ -200,7 +254,7 @@ Sovereign Data Plane        hanzoai/egress
 | [**git-runner**](https://github.com/hanzoai/git-runner) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Ephemeral Kata Container CI job runner (`ci.hanzo.ai`) |
 | [**deploy**](https://github.com/hanzoai/deploy) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1122](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1122-deploy-gitops-plane.md) | Hanzo CD sovereign continuous delivery reconciler (`cd.hanzo.ai`) |
 
-### 10. Blockchain Substrate & Proof of AI (PoAI)
+### 9. Blockchain Substrate & Proof of AI (PoAI)
 | Repository | Documentation | Specification | Description |
 | :--- | :--- | :--- | :--- |
 | [**node**](https://github.com/hanzoai/node) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1020](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1020-chain-registry.md) | Sovereign `hanzod` network node in Rust (Chain ID 36963) |
