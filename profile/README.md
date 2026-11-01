@@ -51,7 +51,9 @@ Hanzo unifies every layer of the modern cloud and AI stack into an open, zero-tr
    ├─ IAM (hanzo.id) & KMS (kms.hanzo.ai)
    ├─ Model Hub (500+ LLMs, Routing, Prompting, RAG)
    ├─ Multi-Tenant BaaS (Base + Encrypted SQLite)
+   ├─ Business Framework (DocType Engine on SQLite)
    ├─ Workflow Automation (Auto + Tasks over ZAP)
+   ├─ Compute & Fleet Orchestrator (Visor + VM)
    ├─ Channel & Integration Registry (Slack, GitHub, Linear)
    ├─ Realtime ZAP Telemetry Ingestion (o11y Spans/Metrics/Logs)
    └─ In-Cluster BuildKit Job Dispatch (/v1/build)
@@ -66,6 +68,32 @@ Sovereign Data Plane        hanzoai/egress
 • KV (In-Memory RESP/ZAP)
 • S3 (S-Chain Object Store)
 ```
+
+---
+
+## The "Never Go Stale" Code Generation Pipeline (HIP-0139)
+
+To ensure client libraries, documentation, CLI tools, and agent definitions never drift from production code, Hanzo enforces a **single-source-of-truth generation pipeline**:
+
+```
+Go Live Router (zap-proto/zip & hanzoai/cloud)
+                   │
+                   ▼
+  make openapi ➔ GET /v1/openapi.json
+  (Canonical 1,800+ path golden contract; verified by CI)
+                   │
+                   ▼
+  hanzoai/openapi Generator (generate.py, sdks.yaml)
+                   │
+  ┌────────────────┼────────────────┬────────────────┐
+  ▼                ▼                ▼                ▼
+Rust CLI        MCP Server      Client SDKs       Documentation
+(hanzoai/cli)   (hanzoai/mcp)   (14+ Languages)   (docs.hanzo.ai, llms.txt)
+```
+
+1. **Declared Once in Code**: Handlers, routes, request/response types, and security schemes are written once in Go using `zap-proto/zip`.
+2. **Golden Contract Verification**: Running `make openapi` compiles the live route table into `openapi.yaml` and `private.yaml`. If an engineer edits a route or model without updating the golden spec, CI fails.
+3. **Automated SDK & Tool Projection**: `hanzoai/openapi` automatically regenerates the Rust CLI, Model Context Protocol tools, and client SDKs across **14+ programming languages**, stamping each release with a cryptographic `.spec-lock`.
 
 ---
 
@@ -140,6 +168,8 @@ To ensure high performance across every ecosystem without code duplication, Hanz
 | **Dart / Flutter**| [**hanzoai/dart-sdk**](https://github.com/hanzoai/dart-sdk) | [**hanzo-dart/sdk**](https://github.com/hanzo-dart/sdk) | pub.dev (`hanzo`) | `dart pub add hanzo` |
 | **Kotlin** | [**hanzoai/kotlin-sdk**](https://github.com/hanzoai/kotlin-sdk) | [**hanzo-kt/sdk**](https://github.com/hanzo-kt/sdk) | Maven Central | `implementation("ai.hanzo:sdk")`|
 | **Java** | [**hanzoai/java-sdk**](https://github.com/hanzoai/java-sdk) | [**hanzo-java/sdk**](https://github.com/hanzo-java/sdk) | Maven Central | `<groupId>ai.hanzo</groupId>` |
+| **PHP** | [**hanzoai/php-sdk**](https://github.com/hanzoai/php-sdk) | [**hanzo-php/sdk**](https://github.com/hanzo-php/sdk) | Packagist (`hanzoai/sdk`) | `composer require hanzoai/sdk` |
+| **Ruby** | [**hanzoai/ruby-sdk**](https://github.com/hanzoai/ruby-sdk) | [**hanzo-ruby/sdk**](https://github.com/hanzo-ruby/sdk) | RubyGems (`hanzoai`) | `gem install hanzoai` |
 | **Common Lisp** | [**hanzo-cl**](https://github.com/hanzo-cl) | [**hanzo-cl/sdk**](https://github.com/hanzo-cl/sdk) | Quicklisp | `(ql:quickload :hanzo)` |
 
 ---
@@ -178,14 +208,29 @@ The Hanzo ecosystem is organized across specialized, purpose-driven GitHub organ
 | [**iam**](https://github.com/hanzoai/iam) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0111](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0111-iam-authentication-standard.md) | Sovereign Identity & Access Management service (`hanzo.id`) |
 | [**kms**](https://github.com/hanzoai/kms) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0136](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0136-one-secret-one-path.md) | Sovereign Key Management Service & envelope encryption (`kms.hanzo.ai`) |
 
-### 2. Framework, RPC & Code Generation
+### 2. Multi-Cloud Compute, Sandboxes & Kubernetes Fleet
+| Repository | Documentation | Specification | Description |
+| :--- | :--- | :--- | :--- |
+| [**vm**](https://github.com/hanzoai/vm) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1172](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1172-visor-compute-you-rent.md) | Multi-cloud compute plane (AWS, GCP, Azure, DO, Bare-Metal) under `/v1/visor/*` |
+| [**visor**](https://github.com/hanzoai/visor) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0123](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0123-visor-fleet-autoscaling.md) | Userspace gVisor application kernel & container sandbox runtime (`runsc`) |
+| [**kata**](https://github.com/hanzoai/kata) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1146](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1146-sandbox-compute-primitive.md) | Hypervisor-isolated Kata Container microVM execution sandbox for agents |
+| [**tasks**](https://github.com/hanzoai/tasks) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1062](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1062-tasks-the-durable-run.md) | Durable workflow execution engine & distributed task queue over ZAP |
+
+### 3. Business Apps, Metadata Engine & ERP
+| Repository | Documentation | Specification | Description |
+| :--- | :--- | :--- | :--- |
+| [**framework**](https://github.com/hanzoai/framework) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1126](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1126-framework-doctype-engine.md) | Metadata-driven DocType engine in native Go on SQLite (zero Python runtime) |
+| [**erp**](https://github.com/hanzoai/erp) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Sovereign Enterprise Resource Planning deployment (`erp.hanzo.ai`) |
+| [**crm**](https://github.com/hanzo-inc/crm) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1120](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1120-crm-sales-pipeline.md) | AI-native sales and customer pipeline management (`crm.hanzo.ai`) |
+
+### 4. Framework, RPC & Code Generation
 | Repository | Documentation | Specification | Description |
 | :--- | :--- | :--- | :--- |
 | [**zip**](https://github.com/zap-proto/zip) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0122](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0122-zip-zap-native-application-server.md) | Go web micro-framework (Fiber v3 / fasthttp) with native ZAP-typed handlers |
 | [**zap**](https://github.com/zap-proto/zap) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0114](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0114-zap-inter-vm-cognitive-transport.md) | Zero-copy Application Protocol (ZAP) runtimes (Rust, Go, TypeScript) |
 | [**openapi**](https://github.com/hanzoai/openapi) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0139](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0139-capability.md) | Single-source generator projecting `/v1/openapi.json` into 9 client surfaces |
 
-### 3. AI Compute, Models, Inference & Autonomous Agents
+### 5. AI Compute, Models, Inference & Autonomous Agents
 | Repository | Documentation | Specification | Description |
 | :--- | :--- | :--- | :--- |
 | [**ai**](https://github.com/hanzoai/ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1211](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1211-ai-the-model-api.md) | AI control plane, model catalogue (500+ LLMs), RAG orchestrator |
@@ -198,18 +243,16 @@ The Hanzo ecosystem is organized across specialized, purpose-driven GitHub organ
 | [**persona**](https://github.com/hanzoai/persona) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0524](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0524-the-personal-agent.md) | Multi-language persona profile loader and validator (Rust, TS, Python) |
 | [**dev**](https://github.com/hanzoai/dev) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1330](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1330-dev-the-agent-loop.md) | Sovereign autonomous AI coding agent loop |
 | [**gen**](https://github.com/hanzoai/gen) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Terminal coding agent harness (`hanzo dev` / `gen`) with native MCP integration |
-| [**kata**](https://github.com/hanzoai/kata) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1146](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1146-sandbox-compute-primitive.md) | Hypervisor-isolated Kata Container execution sandbox for agents |
 | [**enso**](https://github.com/hanzoai/enso) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0510](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0510-enso-learned-router.md) | Learned multimodal router and CDP browser automation agent |
 
-### 4. Automation, Marketplace & Connectors
+### 6. Automation, Marketplace & Connectors
 | Repository | Documentation | Specification | Description |
 | :--- | :--- | :--- | :--- |
 | [**auto**](https://github.com/hanzoai/auto) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1063](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1063-auto-flows-that-run-themselves.md) | Native Go workflow automation engine with embedded canvas (`auto.hanzo.ai`) |
 | [**market**](https://github.com/hanzoai/market) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1137](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1137-marketplace-listings.md) | Sovereign decentralized marketplace for agents, apps & MCP tools (`hanzo.market`) |
 | [**mcp**](https://github.com/hanzoai/mcp) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0300](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0300-unified-mcp.md) | Model Context Protocol servers for agent tooling (stdio and HTTP transports) |
-| [**tasks**](https://github.com/hanzoai/tasks) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1062](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1062-tasks-the-durable-run.md) | Durable workflow execution engine (Temporal-derived, native ZAP transport) |
 
-### 5. Sovereign Data Plane & Storage
+### 7. Sovereign Data Plane & Storage
 | Repository | Documentation | Specification | Description |
 | :--- | :--- | :--- | :--- |
 | [**base**](https://github.com/hanzoai/base) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1104](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1104-base-hosted-backend.md) | Multi-tenant BaaS with encrypted per-org SQLite instances & realtime sync |
@@ -222,7 +265,7 @@ The Hanzo ecosystem is organized across specialized, purpose-driven GitHub organ
 | [**orm**](https://github.com/hanzoai/orm) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Canonical ORM supporting document `Model[T]` and relational schema |
 | [**vfs**](https://github.com/hanzoai/vfs) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0107](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0107-streaming-replication-over-vfs.md) | Content-addressed, PQ-encrypted block storage abstraction |
 
-### 6. Frontend Substrate, Components & Workspace Apps
+### 8. Frontend Substrate, Components & Workspace Apps
 | Repository | Documentation | Specification | Description |
 | :--- | :--- | :--- | :--- |
 | [**gui**](https://github.com/hanzoai/gui) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0504](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0504-unified-design-system.md) | Universal styling library & optimizing compiler (`@hanzo/gui`, `@hanzogui/core`) |
@@ -234,7 +277,7 @@ The Hanzo ecosystem is organized across specialized, purpose-driven GitHub organ
 | [**mobile**](https://github.com/hanzoai/mobile) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Native iOS & Android application built on Expo SDK 57 |
 | [**extension**](https://github.com/hanzoai/extension) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Browser extension (Chrome, Firefox, Safari) and IDE plugins |
 
-### 7. Sovereign Cloud Applications & Admin
+### 9. Sovereign Cloud Applications & Admin
 | Repository | Documentation | Specification | Description |
 | :--- | :--- | :--- | :--- |
 | [**admin**](https://github.com/hanzoai/admin) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1320](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1320-admin-the-operator-console.md) | SuperAdmin console (`admin.hanzo.ai`) & live `/code` agent session monitor |
@@ -246,7 +289,7 @@ The Hanzo ecosystem is organized across specialized, purpose-driven GitHub organ
 | [**team**](https://github.com/hanzoai/team) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1048](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1048-team.md) | Sovereign team collaboration platform (`hanzo.team`) |
 | [**bot**](https://github.com/hanzoai/bot) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1107](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1107-bot-runs-on-a-surface.md) | Multi-channel personal assistant gateway (`hanzo.bot`) |
 
-### 8. Sovereign DevOps & Delivery Fleet
+### 10. Sovereign DevOps & Delivery Fleet
 | Repository | Documentation | Specification | Description |
 | :--- | :--- | :--- | :--- |
 | [**git**](https://github.com/hanzoai/git) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1328](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1328-forge-the-meta-code-host.md) | Hanzo Forge git server and GitHub overlay (`forge.hanzo.ai`) |
@@ -254,7 +297,7 @@ The Hanzo ecosystem is organized across specialized, purpose-driven GitHub organ
 | [**git-runner**](https://github.com/hanzoai/git-runner) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Ephemeral Kata Container CI job runner (`ci.hanzo.ai`) |
 | [**deploy**](https://github.com/hanzoai/deploy) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1122](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1122-deploy-gitops-plane.md) | Hanzo CD sovereign continuous delivery reconciler (`cd.hanzo.ai`) |
 
-### 9. Blockchain Substrate & Proof of AI (PoAI)
+### 11. Blockchain Substrate & Proof of AI (PoAI)
 | Repository | Documentation | Specification | Description |
 | :--- | :--- | :--- | :--- |
 | [**node**](https://github.com/hanzoai/node) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1020](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1020-chain-registry.md) | Sovereign `hanzod` network node in Rust (Chain ID 36963) |
