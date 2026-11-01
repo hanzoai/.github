@@ -105,9 +105,9 @@ Rust CLI        MCP Server      Client SDKs       Documentation
 (hanzoai/cli)   (hanzoai/mcp)   (14+ Languages)   (docs.hanzo.ai, llms.txt)
 ```
 
-1. **Declared Once in Code**: Handlers, routes, request/response types, and security schemes are written once in Go using `zap-proto/zip`.
+1. **Declared Once in Code**: Handlers, routes, request/response types, and security schemes are written once in Go using [`zap-proto/zip`](https://github.com/zap-proto/zip).
 2. **Golden Contract Verification**: Running `make openapi` compiles the live route table into `openapi.yaml` and `private.yaml`. If an engineer edits a route or model without updating the golden spec, CI fails.
-3. **Automated SDK & Tool Projection**: `hanzoai/openapi` automatically regenerates the Rust CLI, Model Context Protocol tools, and client SDKs across **14+ programming languages**, stamping each release with a cryptographic `.spec-lock`.
+3. **Automated SDK & Tool Projection**: [`hanzoai/openapi`](https://github.com/hanzoai/openapi) automatically regenerates the Rust CLI, Model Context Protocol tools, and client SDKs across **14+ programming languages**, stamping each release with a cryptographic `.spec-lock`.
 
 ---
 
@@ -117,22 +117,22 @@ Rust CLI        MCP Server      Client SDKs       Documentation
 * **Single Binary Footprint**: Run on a laptop with zero cloud dependencies.
 * **One-Command Boot (`hanzo up`)**: Boots the entire unified Hanzo cloud locally, lazy-loading each service (`/v1/*`) on-demand!
 * **CLI Entry**: `hanzo` CLI installed via `curl -fsSL https://hanzo.sh | sh`. Login as a user or administrator with `hanzo auth login`.
-* **Local Cloud Server**: `hanzoai/cloud` runs unencrypted for development via `CLOUD_DEV_UNENCRYPTED=1 make build`.
-* **Local BaaS**: `hanzoai/base` boots in-process on port `8090` using SQLite with immediate REST and realtime SSE change streams.
-* **Local Inference**: `hanzoai/engine` serves quantized GGUF models on CPU, Apple Silicon Metal, or CUDA over `/v1/chat/completions`.
-* **Coding Agents**: `hanzo dev` runs coding sessions locally within `hanzoai/kata` microVM sandboxes over standard I/O MCP.
+* **Local Cloud Server**: [`hanzoai/cloud`](https://github.com/hanzoai/cloud) runs unencrypted for development via `CLOUD_DEV_UNENCRYPTED=1 make build`.
+* **Local BaaS**: [`hanzoai/base`](https://github.com/hanzoai/base) boots in-process on port `8090` using SQLite with immediate REST and realtime SSE change streams.
+* **Local Inference**: [`hanzoai/engine`](https://github.com/hanzoai/engine) serves quantized GGUF models on CPU, Apple Silicon Metal, or CUDA over `/v1/chat/completions`.
+* **Coding Agents**: `hanzo dev` runs coding sessions locally within [`hanzoai/kata`](https://github.com/hanzoai/kata) microVM sandboxes over standard I/O MCP.
 
 ### 2. Clustered Production Runtime
 * **High-Availability Kubernetes**: Deployed across sovereign clusters (`hanzo-k8s`, AWS EKS, etc).
-* **Ingress & Identity Injection**: Requests pass through AWS Network Load Balancers (NLB), `hanzoai/ingress` (handling TLS termination and certificates), and stateless `hanzoai/gateway` (validating RSA-signed JWTs from `iam` and injecting trusted `X-User-Id` / `X-Org-Id` headers downstream).
-* **Unified Control Plane**: `cloud` mounts all core subsystems dynamically using the `zip` framework without code divergence.
-* **Sovereign GPU Inference**: Model routing passes through `hanzoai/ai` and `hanzo-inc/kai`, executing against resident `hanzoai/engine` inference engine and `hanzoai/ml` framework.
-* **Continuous Delivery**: Reconciled continuously by Hanzo CD (`cd.hanzo.ai`, `hanzoai/deploy`) against declarative specs in `universe`.
+* **Ingress & Identity Injection**: Requests pass through AWS Network Load Balancers (NLB), [`hanzoai/ingress`](https://github.com/hanzoai/ingress) (handling TLS termination and certificates), and stateless [`hanzoai/gateway`](https://github.com/hanzoai/gateway) (validating RSA-signed JWTs from `iam` and injecting trusted `X-User-Id` / `X-Org-Id` headers downstream).
+* **Unified Control Plane**: [`hanzoai/cloud`](https://github.com/hanzoai/cloud) mounts all core subsystems dynamically using the [`zip`](https://github.com/zap-proto/zip) framework without code divergence.
+* **Sovereign GPU Inference**: Model routing passes through [`hanzoai/ai`](https://github.com/hanzoai/ai) and [`hanzo-inc/kai`](https://github.com/hanzo-inc/kai), executing against resident [`hanzoai/engine`](https://github.com/hanzoai/engine) inference engine and [`hanzoai/ml`](https://github.com/hanzoai/ml) framework.
+* **Continuous Delivery**: Reconciled continuously by Hanzo CD (`cd.hanzo.ai`, [`hanzoai/deploy`](https://github.com/hanzoai/deploy)) against declarative specs in [`hanzo-inc/universe`](https://github.com/hanzo-inc/universe).
 
 ### 3. Base Data Layer Composition
 * **Multi-Tenant SQLite**: Each tenant/organization gets an isolated database at `/orgs/<org>/data.db`.
-* **Zero Plaintext at Rest**: Encrypted via `hanzoai/sqlite` and hardware-accelerated SQLCipher 4 using keys derived from Hanzo KMS.
-* **Streaming Replication**: Replicated in real time via `hanzoai/vfs` blocks to S-Chain distributed object storage (`hanzoai/s3`).
+* **Zero Plaintext at Rest**: Encrypted via [`hanzoai/sqlite`](https://github.com/hanzoai/sqlite) and hardware-accelerated SQLCipher 4 using keys derived from Hanzo KMS.
+* **Streaming Replication**: Replicated in real time via [`hanzoai/vfs`](https://github.com/hanzoai/vfs) blocks to S-Chain distributed object storage ([`hanzoai/s3`](https://github.com/hanzoai/s3)).
 * **In-Process JavaScript Hooks**: Business logic runs in sandboxed ECMAScript VMs via Goja (`.base.js`).
 
 ### 4. Realtime Pipeline
@@ -142,38 +142,38 @@ Rust CLI        MCP Server      Client SDKs       Documentation
 * **Interactive Agent Sessions**: `hanzo dev` sessions stream live terminal PTY output, diff trees, and model reasoning to Mission Control.
 
 ### 5. Native Sandboxing & Visor Runtime
-* **Native Userspace Sandbox (`hanzoai/visor`)**: Lightweight application kernel and container sandbox written in Go, communicating natively over the zero-copy ZAP binary protocol instead of gRPC.
+* **Native Userspace Sandbox ([`hanzoai/visor`](https://github.com/hanzoai/visor))**: Lightweight application kernel and container sandbox written in Go, communicating natively over the zero-copy ZAP binary protocol instead of gRPC.
 * **Low Latency & High Density**: Delivers sub-millisecond cold starts and significantly lower memory footprints than hypervisors (such as Firecracker), providing the high-density isolation necessary for agent fleets.
 * **PaaS & Execution Primitives**: Directly powers ephemeral runner dispatch (`POST /v1/runner`), interactive coding sessions (`hanzo dev`), and code evaluation sandboxes.
 
 ### 6. Code Intelligence & Semantic Search Pipeline
-* **Concrete Syntax Trees (AST)**: Parsed in-process via `hanzoai/ast` (grammar parser generator across 40+ programming languages) into queryable s-expression CST nodes.
-* **Language Server Protocol (LSP)**: `hanzoai/lsp` resolves cross-file definitions, type hierarchies, hover docs, and diagnostics without external IDE processes.
-* **Trigram Inverted Index (tgram)**: `hanzoai/tgrep` builds 3-character sub-token posting lists across git repositories, providing sub-millisecond regex code search.
-* **Semantic Vector & Graph Backend**: Code chunks are embedded and indexed via `hanzoai/vector` (HNSW) and linked to ontology nodes via `hanzoai/graph` (distributed graph engine over `luxfi/zapdb`), enabling hybrid semantic discovery at `POST /v1/semantic`.
+* **Concrete Syntax Trees (AST)**: Parsed in-process via [`hanzoai/ast`](https://github.com/hanzoai/ast) (grammar parser generator across 40+ programming languages) into queryable s-expression CST nodes.
+* **Language Server Protocol (LSP)**: [`hanzoai/lsp`](https://github.com/hanzoai/lsp) resolves cross-file definitions, type hierarchies, hover docs, and diagnostics without external IDE processes.
+* **Trigram Inverted Index (tgram)**: [`hanzoai/tgrep`](https://github.com/hanzoai/tgrep) builds 3-character sub-token posting lists across git repositories, providing sub-millisecond regex code search.
+* **Semantic Vector & Graph Backend**: Code chunks are embedded and indexed via [`hanzoai/vector`](https://github.com/hanzoai/vector) (HNSW) and linked to ontology nodes via [`hanzoai/graph`](https://github.com/hanzoai/graph) (distributed graph engine over [`luxfi/zapdb`](https://github.com/luxfi/zapdb)), enabling hybrid semantic discovery at `POST /v1/semantic`.
 
 ### 7. App Platform & BuildKit PaaS
-* **In-Cluster Multi-Arch BuildKit**: Invoked via `POST /v1/build` in `cloud`, dispatching isolated container builds with zero host Docker daemon exposure.
-* **Ephemeral MicroVM Runners**: `POST /v1/runner` allocates just-in-time microVMs (`hanzoai/git-runner`) for isolated code evaluation and test suites.
-* **Artifact & Package Distribution**: Multi-arch container images and Helm charts push to `oci.hanzo.ai` (backed by `hanzoai/s3`), while language dependencies resolve via `pkg.hanzo.ai`.
-* **Forge & Hanzo CD Reconciler**: Hanzo Forge (`forge.hanzo.ai` / `hanzoai/git`) hosts repositories, PRs, and Kanban project boards, while Hanzo CD (`cd.hanzo.ai` / `hanzoai/deploy`) continuously syncs declared Helm charts into production.
+* **In-Cluster Multi-Arch BuildKit**: Invoked via `POST /v1/build` in [`hanzoai/cloud`](https://github.com/hanzoai/cloud), dispatching isolated container builds with zero host Docker daemon exposure.
+* **Ephemeral MicroVM Runners**: `POST /v1/runner` allocates just-in-time microVMs ([`hanzoai/git-runner`](https://github.com/hanzoai/git-runner)) for isolated code evaluation and test suites.
+* **Artifact & Package Distribution**: Multi-arch container images and Helm charts push to `oci.hanzo.ai` (backed by [`hanzoai/s3`](https://github.com/hanzoai/s3)), while language dependencies resolve via `pkg.hanzo.ai`.
+* **Forge & Hanzo CD Reconciler**: Hanzo Forge (`forge.hanzo.ai` / [`hanzoai/git`](https://github.com/hanzoai/git)) hosts repositories, PRs, and Kanban project boards, while Hanzo CD (`cd.hanzo.ai` / [`hanzoai/deploy`](https://github.com/hanzoai/deploy)) continuously syncs declared Helm charts into production.
 
 ### 8. Telemetry, Exception Tracking & Event Substrate
-* **Native Exception Tracking (`hanzoai/sentinel`)**: Ingests standard error envelope protocols (`/api/{project_id}/envelope/`, `/api/{project_id}/store/`) from client SDKs with zero code modifications, providing crash capture and stack-frame unwinding (`ghcr.io/hanzoai/sentry`).
+* **Native Exception Tracking ([`hanzoai/sentinel`](https://github.com/hanzoai/sentinel))**: Ingests standard error envelope protocols (`/api/{project_id}/envelope/`, `/api/{project_id}/store/`) from client SDKs with zero code modifications, providing crash capture and stack-frame unwinding (`ghcr.io/hanzoai/sentry`).
 * **High-Throughput Event Ingestion (`POST /v1/event`)**: High-throughput clickstream and telemetry ingestion via lightweight, cookieless `tag.js` auto-capture.
 * **Web & Product Analytics (`analytics.hanzo.ai`)**: Real-time traffic, page views, bounce rates, and referrer metrics respecting strict sovereign privacy and zero third-party cookie leakage.
-* **Business Intelligence & OLAP Warehouse (`insights.hanzo.ai` & `hanzoai/datastore`)**: Columnar OLAP engine decoupled over S-Chain object store (`hanzoai/s3`). Powers arbitrary SQL aggregations, retention cohorts, conversion funnels, and revenue attribution.
-* **Event Streaming & Protocol Adapters**: In-memory and persisted event pub/sub via `hanzoai/pubsub` over ZAP binary transport (port `9653`), with zero-code protocol bridges for Kafka (`hanzoai/kafka`) and AMQP message queues (`hanzoai/amqp`).
+* **Business Intelligence & OLAP Warehouse (`insights.hanzo.ai` & [`hanzoai/datastore`](https://github.com/hanzoai/datastore))**: Columnar OLAP engine decoupled over S-Chain object store ([`hanzoai/s3`](https://github.com/hanzoai/s3)). Powers arbitrary SQL aggregations, retention cohorts, conversion funnels, and revenue attribution.
+* **Event Streaming & Protocol Adapters**: In-memory and persisted event pub/sub via [`hanzoai/pubsub`](https://github.com/hanzoai/pubsub) over ZAP binary transport (port `9653`), with zero-code protocol bridges for Kafka ([`hanzoai/kafka`](https://github.com/hanzoai/kafka)) and AMQP message queues ([`hanzoai/amqp`](https://github.com/hanzoai/amqp)).
 
 ### 9. Autonomous Headless Agentic Commerce & Treasury
-* **Sovereign Commerce Engine (`hanzoai/commerce`)**: Built on Hanzo's foundational commerce, analytics, and billing platform.
+* **Sovereign Commerce Engine ([`hanzoai/commerce`](https://github.com/hanzoai/commerce))**: Built on Hanzo's foundational commerce, analytics, and billing platform.
 * **Headless Agent Provisioning**: Fully optimized for autonomous AI agents. Any agent can programmatically provision an organization, generate an API key, test on the free tier, and autonomously top up compute credits via native cryptocurrency (EIP-712 USDC / native MPC treasury rails), saved payment cards, or bank wires.
 * **Financial AI & Treasury**: Autonomous trading agents can generate wallets, connect exchange accounts, and manage automated treasury operations through unified APIs.
 
 ### 10. AI Substrate & Decentralized AI Network (Phase 1 ➔ Phase 2)
-* **Core ML Framework (`hanzoai/ml`)**: Multi-backend Rust tensor computation and machine learning toolkit (`hanzo-ml`, CUDA, Metal, ROCm, Vulkan).
-* **LLM Inference Server (`hanzoai/engine`)**: High-performance multimodal inference server supporting GGUF, CUDA, Metal, and ISQ quantization over `/v1/chat/completions`.
-* **Sovereign Node & P2P AI Mesh (`hanzoai/node`)**: Blockchain node embedding the inference engine, shipped with the Hanzo desktop app to mine AI and connect local compute with cloud inference — paving the way for a global decentralized AI network for distributed training, inference, and a P2P compute marketplace.
+* **Core ML Framework ([`hanzoai/ml`](https://github.com/hanzoai/ml))**: Multi-backend Rust tensor computation and machine learning toolkit (`hanzo-ml`, CUDA, Metal, ROCm, Vulkan).
+* **LLM Inference Server ([`hanzoai/engine`](https://github.com/hanzoai/engine))**: High-performance multimodal inference server supporting GGUF, CUDA, Metal, and ISQ quantization over `/v1/chat/completions`.
+* **Sovereign Node & P2P AI Mesh ([`hanzoai/node`](https://github.com/hanzoai/node))**: Blockchain node embedding the inference engine, shipped with the Hanzo desktop app to mine AI and connect local compute with cloud inference — paving the way for a global decentralized AI network for distributed training, inference, and a P2P compute marketplace.
 
 ### 11. Multi-Tenant Organizations, Unified IAM & Sandboxed Extensibility
 * **Sovereign Identity Protocol (`did:hanzo:<org>:<user>`)**: Governed by [HIP-0097](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0097-sovereign-identity.md) and `@hanzo/iam` (`hanzo.id`). Cryptographic user authentication, organization membership, and RBAC via RSA/ECDSA-signed JWT claims.
@@ -182,7 +182,7 @@ Rust CLI        MCP Server      Client SDKs       Documentation
 * **Backend In-Process Sandboxes**: Users write custom business logic and backend extensions that execute safely in sandboxed environments:
   * **ECMAScript/JS Sandboxes**: Fast execution via Goja/V8 (`.base.js`) hooks for record lifecycle events and REST API extensions.
   * **WebAssembly Sandboxes**: Multi-language extensions compiled to Wasm running inside `wasm` runtimes and isolated `kata` microVM sandboxes.
-* **Enterprise High-Performance `wasm2go` AOT**: In enterprise production (`hanzo-inc/cloud`), performance-critical Wasm modules are compiled directly into native Go assembly (`amd64.s`/`arm64.s`) via `hanzoai/wasm2go`, running natively inside the "One Binary" with zero CGo overhead and zero interpreter tax.
+* **Enterprise High-Performance `wasm2go` AOT**: In enterprise production ([`hanzo-inc/cloud`](https://github.com/hanzo-inc/cloud)), performance-critical Wasm modules are compiled directly into native Go assembly (`amd64.s`/`arm64.s`) via [`hanzoai/wasm2go`](https://github.com/hanzoai/wasm2go), running natively inside the "One Binary" with zero CGo overhead and zero interpreter tax.
 
 ---
 
@@ -339,7 +339,7 @@ The Hanzo ecosystem is organized across specialized, purpose-driven GitHub organ
 | [**lsp**](https://github.com/hanzoai/lsp) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1214](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1214-lsp-live-code-intelligence.md) | Language Server Protocol server daemon (symbol definitions, references, diagnostics) |
 | [**tgrep**](https://github.com/hanzoai/tgrep) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1114](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1114-code.md) | Trigram-indexed (tgram) regex search engine for sub-millisecond codebase grep |
 | [**vector**](https://github.com/hanzoai/vector) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0401](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0401-datastore-crd.md) | HNSW vector database for high-dimensional embeddings and semantic search |
-| [**graph**](https://github.com/hanzoai/graph) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1198](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1198-graph-assertion-plane.md) | Distributed GraphQL & graph database engine over `luxfi/zapdb` posting lists |
+| [**graph**](https://github.com/hanzoai/graph) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1198](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1198-graph-assertion-plane.md) | Distributed GraphQL & graph database engine over [`luxfi/zapdb`](https://github.com/luxfi/zapdb) posting lists |
 
 ### 9. Frontend Substrate, Components & Workspace Apps
 | Repository | Documentation | Specification | Description |
@@ -414,7 +414,7 @@ Fork & Assemble Architecture                   Private Cloud Control Plane
 ```
 
 * **Fork and Assemble Locally**: Developers can freely fork public repos, assemble their own backend or AI agent mesh on top of Hanzo's canonical `/v1/*` REST and ZAP binary endpoints, and deploy to their own infrastructure with zero external telemetry or cloud lock-in.
-* **Enterprise Cloud Enclave**: The managed cloud fleet (`cloud.hanzo.ai`, `platform.hanzo.ai`) uses `wasm2go` to compile high-performance native kernels directly into Go assembly (`amd64.s`/`arm64.s`), eliminating CGo toolchains while providing high-throughput machine scheduling, JIT runner allocation, and hardware-attested enclave execution.
+* **Enterprise Cloud Enclave**: The managed cloud fleet (`cloud.hanzo.ai`, `platform.hanzo.ai`) uses [`wasm2go`](https://github.com/hanzoai/wasm2go) to compile high-performance native kernels directly into Go assembly (`amd64.s`/`arm64.s`), eliminating CGo toolchains while providing high-throughput machine scheduling, JIT runner allocation, and hardware-attested enclave execution.
 
 ---
 
