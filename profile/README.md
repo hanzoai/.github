@@ -418,6 +418,30 @@ Fork & Assemble Architecture                   Private Cloud Control Plane
 
 ---
 
+## Clone the Sovereign Fleet: Get All Hanzo Repositories
+
+Clone all 700+ repositories across the Hanzo open-source fleet with a single parallel command:
+
+```bash
+# Clone the complete Hanzo OSS fleet (700+ repos) into ./hanzo-repos with 16 parallel workers
+curl -fsSL https://raw.githubusercontent.com/hanzoai/.github/main/scripts/clone-all.sh | bash -s -- -j 16
+```
+
+Or using the GitHub CLI directly with `xargs`:
+```bash
+# Stream repo list and clone concurrently
+gh repo list hanzoai --limit 1000 --json name --template '{{range .}}{{if not .isArchived}}{{.name}}{{"\n"}}{{end}}{{end}}' | \
+  xargs -P 16 -I {} git clone https://github.com/hanzoai/{}.git hanzo-repos/hanzoai/{}
+```
+
+For enterprise members with access to both `hanzoai` and `hanzo-inc`:
+```bash
+# Clone both public OSS and private enterprise enclaves concurrently via SSH:
+curl -fsSL https://raw.githubusercontent.com/hanzoai/.github/main/scripts/clone-all.sh | bash -s -- -o "hanzoai,hanzo-inc" -j 16
+```
+
+---
+
 ## Quickstart: Run Hanzo on Your Machine
 
 ### 1. Install the Sovereign CLI & Authenticate
