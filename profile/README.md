@@ -126,6 +126,18 @@ Rust CLI        MCP Server      Client SDKs       Documentation
 * **Telemetry Streaming**: Node-local OpenTelemetry collectors stream spans, logs, and metrics directly to `apps/o11y` and Datastore.
 * **Interactive Agent Sessions**: `hanzo dev` sessions stream live terminal PTY output, diff trees, and model reasoning to Mission Control.
 
+### 5. Code Intelligence & Semantic Search Pipeline
+* **Concrete Syntax Trees (AST)**: Parsed in-process via `hanzoai/ast` (Tree-sitter bindings for 40+ programming languages) into queryable s-expression CST nodes.
+* **Language Server Protocol (LSP)**: `hanzoai/lsp` resolves cross-file definitions, type hierarchies, hover docs, and diagnostics without external IDE processes.
+* **Trigram Inverted Index (tgram)**: `hanzoai/tgrep` builds 3-character sub-token posting lists across git repositories, providing sub-millisecond regex code search.
+* **Semantic Vector & Graph Backend**: Code chunks are embedded and indexed via `hanzoai/vector` (HNSW) and linked to ontology nodes via `hanzoai/graph` (Dgraph engine over `luxfi/zapdb`), enabling hybrid semantic discovery at `POST /v1/semantic`.
+
+### 6. App Platform & BuildKit PaaS
+* **In-Cluster Multi-Arch BuildKit**: Invoked via `POST /v1/build` in `cloud`, dispatching isolated container builds with zero host Docker daemon exposure.
+* **Ephemeral MicroVM Runners**: `POST /v1/runner` allocates just-in-time Kata microVMs (`hanzoai/git-runner`) for isolated code evaluation and test suites.
+* **Artifact & Package Distribution**: Multi-arch container images and Helm charts push to `oci.hanzo.ai` (backed by `hanzoai/s3`), while language dependencies resolve via `pkg.hanzo.ai`.
+* **Forge & Hanzo CD Reconciler**: Hanzo Forge (`forge.hanzo.ai` / `hanzoai/git`) hosts repositories, PRs, and Kanban project boards, while Hanzo CD (`cd.hanzo.ai` / `hanzoai/deploy`) continuously syncs declared Helm charts into production.
+
 ---
 
 ## Cryptography & Key Management: Split MPC & Hardware Security
@@ -147,7 +159,12 @@ Threshold Secret Sharing    Physical Security Modules     Local Hardware Acceler
 * **Split MPC Backend**: Private master keys never exist on a single machine. Key shares are computed and distributed across independent threshold nodes via **FROST** (Schnorr), **CGGMP21** (ECDSA), and **Pulsar** (Ring-LWE lattice post-quantum threshold signatures).
 * **Optional Hardware HSM**: Enterprise deployments can bind root keys to dedicated hardware security modules via standard **PKCS#11**, **YubiHSM**, **AWS CloudHSM**, or cloud key vaults.
 * **Post-Quantum Cryptography Suite**: Implements **ML-KEM-768** (Kyber key encapsulation), **ML-DSA-65** (Dilithium digital signatures), and **Pulsar** to protect data against store-now-decrypt-later nation-state adversaries.
-* **Zero Plaintext In-Transit / At-Rest**: Databases never store plaintext credentials. Services authenticate using Kubernetes ServiceAccount tokens; `secret.Boot` reads scoped secrets directly into RAM at runtime.
+* **Published Keys vs. Secret Keys**:
+  * **Published Keys (Identity & Verification)**: Ed25519 and Secp256k1 public keys, DID documents (`did:hanzo:<org>:<user>`, [HIP-0097](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0097-sovereign-identity.md)), and public JWKS (`https://hanzo.id/.well-known/jwks.json`). Downstream clients and gateways verify tokens, signatures, and EIP-712 payment authorizations client-side with zero network roundtrips.
+  * **Secret Keys (KMS Sealed Envelope)**: Sensitive credentials (provider API tokens, private keys, database master encryption keys) are sealed in Hanzo KMS under canonical paths `/orgs/{org}/users/{user}/connectors/{provider}/{label}`. They are never committed to git, written to disk, or injected as plain container environment variables.
+* **KMS Environments & Zero-Plaintext Grants**:
+  * `KMS_ENV=dev`: Allows local developers and offline testing to mock envelope grants in-memory without contacting an external HSM or MPC cluster.
+  * `KMS_ENV=production`: Enforces hardware HSM and split-MPC quorum consensus. Workloads authenticate via Kubernetes ServiceAccount tokens; `secret.Boot` reads scoped secrets directly into RAM as memory-only grants.
 
 ---
 
@@ -229,6 +246,7 @@ The Hanzo ecosystem is organized across specialized, purpose-driven GitHub organ
 | [**zip**](https://github.com/zap-proto/zip) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0122](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0122-zip-zap-native-application-server.md) | Go web micro-framework (Fiber v3 / fasthttp) with native ZAP-typed handlers |
 | [**zap**](https://github.com/zap-proto/zap) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0114](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0114-zap-inter-vm-cognitive-transport.md) | Zero-copy Application Protocol (ZAP) runtimes (Rust, Go, TypeScript) |
 | [**openapi**](https://github.com/hanzoai/openapi) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0139](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0139-capability.md) | Single-source generator projecting `/v1/openapi.json` into 9 client surfaces |
+| [**wasm2go**](https://github.com/hanzoai/wasm2go) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Ahead-of-time WebAssembly to Go / Go assembly (`amd64.s`, `arm64.s`) AOT compiler |
 
 ### 5. AI Compute, Models, Inference & Autonomous Agents
 | Repository | Documentation | Specification | Description |
@@ -265,7 +283,16 @@ The Hanzo ecosystem is organized across specialized, purpose-driven GitHub organ
 | [**orm**](https://github.com/hanzoai/orm) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Canonical ORM supporting document `Model[T]` and relational schema |
 | [**vfs**](https://github.com/hanzoai/vfs) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0107](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0107-streaming-replication-over-vfs.md) | Content-addressed, PQ-encrypted block storage abstraction |
 
-### 8. Frontend Substrate, Components & Workspace Apps
+### 8. Code Intelligence, AST/LSP & Vector Search
+| Repository | Documentation | Specification | Description |
+| :--- | :--- | :--- | :--- |
+| [**ast**](https://github.com/hanzoai/ast) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0300](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0300-unified-mcp.md) | Tree-sitter AST parser generator & concrete syntax trees across 40+ grammars |
+| [**lsp**](https://github.com/hanzoai/lsp) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Language Server Protocol server daemon (symbol definitions, references, diagnostics) |
+| [**tgrep**](https://github.com/hanzoai/tgrep) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Trigram-indexed (tgram) regex search engine for sub-millisecond codebase grep |
+| [**vector**](https://github.com/hanzoai/vector) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0401](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0401-datastore-crd.md) | HNSW vector database for high-dimensional embeddings and semantic search |
+| [**graph**](https://github.com/hanzoai/graph) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Distributed GraphQL & graph database engine over `luxfi/zapdb` posting lists |
+
+### 9. Frontend Substrate, Components & Workspace Apps
 | Repository | Documentation | Specification | Description |
 | :--- | :--- | :--- | :--- |
 | [**gui**](https://github.com/hanzoai/gui) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0504](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0504-unified-design-system.md) | Universal styling library & optimizing compiler (`@hanzo/gui`, `@hanzogui/core`) |
@@ -277,7 +304,7 @@ The Hanzo ecosystem is organized across specialized, purpose-driven GitHub organ
 | [**mobile**](https://github.com/hanzoai/mobile) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Native iOS & Android application built on Expo SDK 57 |
 | [**extension**](https://github.com/hanzoai/extension) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Browser extension (Chrome, Firefox, Safari) and IDE plugins |
 
-### 9. Sovereign Cloud Applications & Admin
+### 10. Sovereign Cloud Applications & Admin
 | Repository | Documentation | Specification | Description |
 | :--- | :--- | :--- | :--- |
 | [**admin**](https://github.com/hanzoai/admin) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1320](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1320-admin-the-operator-console.md) | SuperAdmin console (`admin.hanzo.ai`) & live `/code` agent session monitor |
@@ -289,15 +316,17 @@ The Hanzo ecosystem is organized across specialized, purpose-driven GitHub organ
 | [**team**](https://github.com/hanzoai/team) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1048](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1048-team.md) | Sovereign team collaboration platform (`hanzo.team`) |
 | [**bot**](https://github.com/hanzoai/bot) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1107](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1107-bot-runs-on-a-surface.md) | Multi-channel personal assistant gateway (`hanzo.bot`) |
 
-### 10. Sovereign DevOps & Delivery Fleet
+### 11. Sovereign DevOps, Registries & Delivery Fleet
 | Repository | Documentation | Specification | Description |
 | :--- | :--- | :--- | :--- |
 | [**git**](https://github.com/hanzoai/git) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1328](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1328-forge-the-meta-code-host.md) | Hanzo Forge git server and GitHub overlay (`forge.hanzo.ai`) |
 | [**ci**](https://github.com/hanzoai/ci) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Continuous Integration pipeline and reusable workflows |
 | [**git-runner**](https://github.com/hanzoai/git-runner) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Ephemeral Kata Container CI job runner (`ci.hanzo.ai`) |
 | [**deploy**](https://github.com/hanzoai/deploy) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1122](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1122-deploy-gitops-plane.md) | Hanzo CD sovereign continuous delivery reconciler (`cd.hanzo.ai`) |
+| [**oci.hanzo.ai**](https://oci.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1165](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1165-s3-buckets-and-objects.md) | Sovereign OCI container image and Helm chart registry backed by S-Chain |
+| [**pkg.hanzo.ai**](https://pkg.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Universal package registry & mirror (npm, PyPI, Go, Cargo, Maven) |
 
-### 11. Blockchain Substrate & Proof of AI (PoAI)
+### 12. Blockchain Substrate & Proof of AI (PoAI)
 | Repository | Documentation | Specification | Description |
 | :--- | :--- | :--- | :--- |
 | [**node**](https://github.com/hanzoai/node) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1020](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1020-chain-registry.md) | Sovereign `hanzod` network node in Rust (Chain ID 36963) |
@@ -308,6 +337,30 @@ The Hanzo ecosystem is organized across specialized, purpose-driven GitHub organ
 | [**lux-gpu/gpu-kernels**](https://github.com/lux-gpu/gpu-kernels) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Canonical CUDA, Metal, and WGSL compute shaders |
 | [**luxfhe/torus**](https://github.com/luxfhe/torus) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Torus FHE compiler (Python/MLIR ➔ GPU vtbl) |
 | [**PoAI**](https://github.com/luxfi/standard) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0901](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0901-proof-of-ai-native-execution-proofs.md) | Proof of AI verification contracts (PoI, PoT, PoE, PoC) |
+
+---
+
+## Public Open-Source vs. Sovereign Enterprise Enclave (`hanzo-inc`)
+
+Hanzo operates on a clean separation between **Open Source Foundation (`hanzoai/*`)** and **Enterprise Sovereign Fleet (`hanzo-inc/*`)**:
+
+```
+                       The Sovereign Developer Stack
+                                     │
+      ┌──────────────────────────────┴──────────────────────────────┐
+      ▼                                                             ▼
+1. PUBLIC OPEN-SOURCE (hanzoai/*)             2. ENTERPRISE HOSTED ENCLAVE (hanzo-inc/*)
+Fork & Assemble Architecture                   Private Cloud Control Plane
+• 100% Sovereign & Self-Hostable               • Proprietary C/C++ AOT via hanzoai/wasm2go
+• Single-binary local dev (hanzoai/cloud)     • Bare-metal & GPU manager (apps/visor)
+• BaaS data plane (hanzoai/base + SQLite)      • In-cluster BuildKit engine (apps/platform)
+• Multi-tenant REST & ZAP streaming            • EIP-712 USDC crypto clearinghouse
+• Open MCP tools (AST, LSP, tgrep, vector)     • Kai decision engine & calibration models
+• Standard Docker & Helm deployments           • Hardware HSM & Quorum MPC consensus
+```
+
+* **Fork and Assemble Locally**: Developers can freely fork public repos, assemble their own backend or AI agent mesh on top of Hanzo's canonical `/v1/*` REST and ZAP binary endpoints, and deploy to their own infrastructure with zero external telemetry or cloud lock-in.
+* **Enterprise Cloud Enclave**: The managed cloud fleet (`cloud.hanzo.ai`, `platform.hanzo.ai`) uses `wasm2go` to compile high-performance native kernels directly into Go assembly (`amd64.s`/`arm64.s`), eliminating CGo toolchains while providing high-throughput machine scheduling, JIT runner allocation, and hardware-attested enclave execution.
 
 ---
 
