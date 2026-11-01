@@ -2,7 +2,7 @@
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/hanzoai/.github/main/profile/logo-dark.svg">
     <source media="(prefers-color-scheme: light)" srcset="https://raw.githubusercontent.com/hanzoai/.github/main/profile/logo-light.svg">
-    <img src="https://raw.githubusercontent.com/hanzoai/.github/main/profile/logo-dark.svg" alt="Hanzo" width="360">
+    <img src="https://raw.githubusercontent.com/hanzoai/.github/main/profile/logo-dark.svg" alt="Hanzo" width="120">
   </picture>
 </p>
 
@@ -197,19 +197,19 @@ The Hanzo ecosystem is organized across specialized, purpose-driven GitHub organ
 
 | Domain | Organizations | Primary Responsibility |
 | :--- | :--- | :--- |
-| **Core Platforms** | `hanzoai`, `hanzo-core`, `hanzohq`, `hanzo-labs`, `hanzoworks`, `hanzo-community` | Open-source platform cores, control plane, experimental labs, and community extensions |
-| **Language SDKs** | `hanzo-py`, `hanzo-js`, `hanzo-go`, `hanzo-rs`, `hanzo-cpp`, `hanzo-swift`, `hanzo-dart`, `hanzo-kt`, `hanzo-kotlin`, `hanzo-java`, `hanzo-cl` | Native language SDK implementation repositories and package generators |
-| **Identity & Security** | `hanzoiam`, `hanzoid`, `hanzokms`, `hanzompc`, `hanzozt` | Sovereign identity (`hanzo.id`), key custody (`kms.hanzo.ai`), MPC ceremonies, zero-trust overlay |
-| **Data & Storage** | `hanzodb`, `hanzosql`, `hanzokv`, `hanzos3`, `hanzo-ds`, `hanzodocdb` | PostgreSQL engines, in-memory KV, S-Chain object store, ClickHouse OLAP, document DBs |
-| **Models & Compute** | `hanzo-ml`, `hanzolm`, `hanzo-lm`, `hanzovm` | Zen model family weights, Rust tensor libraries, inference acceleration, virtualization |
-| **Agents & Workflows**| `hanzo-studio`, `hanzobot`, `hanzoteam`, `hanzochat`, `hanzoskills`, `hanzoskill` | AI Studio, bot gateways (WhatsApp/Telegram), team workspaces, atomic skill discovery |
-| **Client Applications**| `hanzoapp`, `hanzo-app`, `hanzo-apps` | Production web applications, user consoles, and client frontends |
-| **UI & Styling** | `hanzoui`, `hanzogui` | Universal component library (`@hanzo/ui`) and optimizing style compiler (`@hanzo/gui`) |
-| **DevOps & Delivery** | `hanzocd`, `hanzo-git`, `hanzocr`, `hanzodns`, `hanzo-templates`, `hanzo-os` | Continuous delivery (`cd.hanzo.ai`), Git Forge (`forge.hanzo.ai`), OCI registry (`oci.hanzo.ai`), DNS |
-| **Telemetry & Signals**| `hanzoo11y`, `hanzolog`, `hanzometric`, `hanzomsg`, `hanzofn` | Observability pipelines over ZAP, metrics stores, pub/sub messaging, serverless functions |
-| **Blockchain & Fi** | `hanzonet`, `hanzonetwork`, `hanzodao`, `hanzo-fi`, `hanzo-industries`, `hanzo-agency` | Hanzo validator network, consensus nodes, DeFi primitives, and specialized vertical solutions |
-| **Documentation** | `hanzodocs`, `hanzo-docs` | Documentation sites, LLM context indexes, and OpenAPI specifications |
-| **Enterprise Enclaves**| `hanzo-inc` | Proprietary cloud platform, private hardware kernels, and member-only enclaves |
+| **Core Platforms** | [`hanzoai`](https://github.com/hanzoai), [`hanzo-core`](https://github.com/hanzo-core), [`hanzohq`](https://github.com/hanzohq), [`hanzo-labs`](https://github.com/hanzo-labs), [`hanzoworks`](https://github.com/hanzoworks), [`hanzo-community`](https://github.com/hanzo-community) | Open-source platform cores, control plane, experimental labs, and community extensions |
+| **Language SDKs** | [`hanzo-py`](https://github.com/hanzo-py), [`hanzo-js`](https://github.com/hanzo-js), [`hanzo-go`](https://github.com/hanzo-go), [`hanzo-rs`](https://github.com/hanzo-rs), [`hanzo-cpp`](https://github.com/hanzo-cpp), [`hanzo-swift`](https://github.com/hanzo-swift), [`hanzo-dart`](https://github.com/hanzo-dart), [`hanzo-kt`](https://github.com/hanzo-kt), [`hanzo-kotlin`](https://github.com/hanzo-kotlin), [`hanzo-java`](https://github.com/hanzo-java), [`hanzo-cl`](https://github.com/hanzo-cl) | Native language SDK implementation repositories and package generators |
+| **Identity & Security** | [`hanzoiam`](https://github.com/hanzoiam), [`hanzoid`](https://github.com/hanzoid), [`hanzokms`](https://github.com/hanzokms), [`hanzompc`](https://github.com/hanzompc), [`hanzozt`](https://github.com/hanzozt) | Sovereign identity (`hanzo.id`), key custody (`kms.hanzo.ai`), MPC ceremonies, zero-trust overlay |
+| **Data & Storage** | [`hanzodb`](https://github.com/hanzodb), [`hanzosql`](https://github.com/hanzosql), [`hanzokv`](https://github.com/hanzokv), [`hanzos3`](https://github.com/hanzos3), [`hanzo-ds`](https://github.com/hanzo-ds), [`hanzodocdb`](https://github.com/hanzodocdb) | PostgreSQL engines, in-memory KV, S-Chain object store, ClickHouse OLAP, document DBs |
+| **Models & Compute** | [`hanzo-ml`](https://github.com/hanzo-ml), [`hanzolm`](https://github.com/hanzolm), [`hanzo-lm`](https://github.com/hanzo-lm), [`hanzovm`](https://github.com/hanzovm) | Zen model family weights, Rust tensor libraries, inference acceleration, virtualization |
+| **Agents & Workflows**| [`hanzo-studio`](https://github.com/hanzo-studio), [`hanzobot`](https://github.com/hanzobot), [`hanzoteam`](https://github.com/hanzoteam), [`hanzochat`](https://github.com/hanzochat), [`hanzoskills`](https://github.com/hanzoskills), [`hanzoskill`](https://github.com/hanzoskill) | AI Studio, bot gateways (WhatsApp/Telegram), team workspaces, atomic skill discovery |
+| **Client Applications**| [`hanzoapp`](https://github.com/hanzoapp), [`hanzo-app`](https://github.com/hanzo-app), [`hanzo-apps`](https://github.com/hanzo-apps) | Production web applications, user consoles, and client frontends |
+| **UI & Styling** | [`hanzoui`](https://github.com/hanzoui), [`hanzogui`](https://github.com/hanzogui) | Universal component library (`@hanzo/ui`) and optimizing style compiler (`@hanzo/gui`) |
+| **DevOps & Delivery** | [`hanzocd`](https://github.com/hanzocd), [`hanzo-git`](https://github.com/hanzo-git), [`hanzocr`](https://github.com/hanzocr), [`hanzodns`](https://github.com/hanzodns), [`hanzo-templates`](https://github.com/hanzo-templates), [`hanzo-os`](https://github.com/hanzo-os) | Continuous delivery (`cd.hanzo.ai`), Git Forge (`forge.hanzo.ai`), OCI registry (`oci.hanzo.ai`), DNS |
+| **Telemetry & Signals**| [`hanzoo11y`](https://github.com/hanzoo11y), [`hanzolog`](https://github.com/hanzolog), [`hanzometric`](https://github.com/hanzometric), [`hanzomsg`](https://github.com/hanzomsg), [`hanzofn`](https://github.com/hanzofn) | Observability pipelines over ZAP, metrics stores, pub/sub messaging, serverless functions |
+| **Blockchain & Fi** | [`hanzonet`](https://github.com/hanzonet), [`hanzonetwork`](https://github.com/hanzonetwork), [`hanzodao`](https://github.com/hanzodao), [`hanzo-fi`](https://github.com/hanzo-fi), [`hanzo-industries`](https://github.com/hanzo-industries), [`hanzo-agency`](https://github.com/hanzo-agency) | Hanzo validator network, consensus nodes, DeFi primitives, and specialized vertical solutions |
+| **Documentation** | [`hanzodocs`](https://github.com/hanzodocs), [`hanzo-docs`](https://github.com/hanzo-docs) | Documentation sites, LLM context indexes, and OpenAPI specifications |
+| **Enterprise Enclaves**| [`hanzo-inc`](https://github.com/hanzo-inc) | Proprietary cloud platform, private hardware kernels, and member-only enclaves |
 
 ---
 
@@ -323,8 +323,10 @@ The Hanzo ecosystem is organized across specialized, purpose-driven GitHub organ
 | [**ci**](https://github.com/hanzoai/ci) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Continuous Integration pipeline and reusable workflows |
 | [**git-runner**](https://github.com/hanzoai/git-runner) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Ephemeral Kata Container CI job runner (`ci.hanzo.ai`) |
 | [**deploy**](https://github.com/hanzoai/deploy) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1122](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1122-deploy-gitops-plane.md) | Hanzo CD sovereign continuous delivery reconciler (`cd.hanzo.ai`) |
-| [**oci.hanzo.ai**](https://oci.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1165](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1165-s3-buckets-and-objects.md) | Sovereign OCI container image and Helm chart registry backed by S-Chain |
-| [**pkg.hanzo.ai**](https://pkg.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Universal package registry & mirror (npm, PyPI, Go, Cargo, Maven) |
+| [**operator**](https://github.com/hanzoai/operator) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Rust Kubernetes operator reconciling `App` and platform CRDs (`operator-system`) |
+| [**registry**](https://github.com/hanzoai/registry) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1165](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1165-s3-buckets-and-objects.md) | Sovereign OCI container image and Helm chart registry (`oci.hanzo.ai`) backed by S-Chain |
+| [**pkg**](https://github.com/hanzoai/pkg) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Universal package registry & mirror (`pkg.hanzo.ai`: npm, PyPI, Go, Cargo, Maven) |
+| [**zt**](https://github.com/hanzozt/zt) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Zero Trust overlay networking mesh, controller PKI, and dark edge routers |
 
 ### 12. Blockchain Substrate & Proof of AI (PoAI)
 | Repository | Documentation | Specification | Description |
