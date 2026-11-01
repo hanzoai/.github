@@ -21,10 +21,7 @@
   <a href="https://hips.hanzo.ai"><strong>HIPs Specifications</strong></a> ·
   <a href="https://hanzoskills.com"><strong>Skills</strong></a> ·
   <a href="https://hanzo.market"><strong>Market</strong></a> ·
-  <a href="https://forge.hanzo.ai"><strong>Hanzo Forge</strong></a> ·
-  <a href="https://cd.hanzo.ai"><strong>Hanzo CD</strong></a> ·
-  <a href="https://auto.hanzo.ai"><strong>Auto</strong></a> ·
-  <a href="https://admin.hanzo.ai"><strong>Admin</strong></a> ·
+  <a href="https://forge.hanzo.ai"><strong>Forge</strong></a> ·
   <a href="https://hanzo.sh"><strong>CLI (hanzo.sh)</strong></a>
 </p>
 
