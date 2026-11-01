@@ -150,6 +150,22 @@ Rust CLI        MCP Server      Client SDKs       Documentation
 * **Artifact & Package Distribution**: Multi-arch container images and Helm charts push to `oci.hanzo.ai` (backed by `hanzoai/s3`), while language dependencies resolve via `pkg.hanzo.ai`.
 * **Forge & Hanzo CD Reconciler**: Hanzo Forge (`forge.hanzo.ai` / `hanzoai/git`) hosts repositories, PRs, and Kanban project boards, while Hanzo CD (`cd.hanzo.ai` / `hanzoai/deploy`) continuously syncs declared Helm charts into production.
 
+### 7. Telemetry, Error Tracking & Event Substrate
+* **Sentry Wire Compatibility (`hanzoai/sentinel`)**: Native exception capturing and stack-frame unwinding (`ghcr.io/hanzoai/sentry`). Existing client SDKs (Python, JS/TS, Go, Rust, mobile) point their Sentry DSN directly to `https://sentinel.hanzo.ai` or in-cluster `/api/{project_id}/envelope/` with zero code modifications.
+* **High-Throughput Event Ingestion (`POST /v1/event`)**: High-throughput clickstream and telemetry ingestion via lightweight, cookieless `tag.js` auto-capture.
+* **Web & Product Analytics (`analytics.hanzo.ai`)**: Real-time traffic, page views, bounce rates, and referrer metrics respecting strict sovereign privacy and zero third-party cookie leakage.
+* **Business Intelligence & OLAP Warehouse (`insights.hanzo.ai` & `hanzoai/datastore`)**: Columnar ClickHouse engine decoupled over S-Chain object store (`hanzoai/s3`). Powers arbitrary SQL aggregations, retention cohorts, conversion funnels, and revenue attribution.
+* **Event Streaming & Protocol Adapters**: In-memory and persisted event pub/sub via `hanzoai/pubsub` over ZAP binary transport (port `9653`), with zero-code protocol bridges for `hanzoai/kafka` (Kafka wire protocol) and `hanzoai/amqp` (RabbitMQ/AMQP 0-9-1/1.0).
+
+### 8. Multi-Tenant Organizations, Unified IAM & Sandboxed Extensibility
+* **Sovereign Identity Protocol (`did:hanzo:<org>:<user>`)**: Governed by [HIP-0097](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0097-sovereign-identity.md) and `@hanzo/iam` (`hanzo.id`). Cryptographic user authentication, organization membership, and RBAC via RSA/ECDSA-signed JWT claims.
+* **Per-Tenant Data & Key Isolation**: Every organization gets an independent SQLite database at `/orgs/<org>/data.db` encrypted with organization-specific SQLCipher 4 keys derived from Hanzo KMS, coupled with isolated ZAP pub/sub topic trees.
+* **Frontend Runtime Customization**: Developers customize application look and feel dynamically using mod themes (`@hanzo/mod`), `@hanzo/ui`, and `@hanzo/design` tokens without rebuilding or recompiling frontend distributions.
+* **Backend In-Process Sandboxes**: Users write custom business logic and backend extensions that execute safely in sandboxed environments:
+  * **ECMAScript/JS Sandboxes**: Fast execution via Goja/V8 (`.base.js`) hooks for record lifecycle events and REST API extensions.
+  * **WebAssembly Sandboxes**: Multi-language extensions compiled to Wasm running inside `wasm` runtimes and isolated `kata` microVM sandboxes.
+* **Enterprise High-Performance `wasm2go` AOT**: In enterprise production (`hanzo-inc/cloud`), performance-critical Wasm modules are compiled directly into native Go assembly (`amd64.s`/`arm64.s`) via `hanzoai/wasm2go`, running natively inside the "One Binary" with zero CGo overhead and zero interpreter tax.
+
 ---
 
 ## Cryptography & Key Management: Split MPC & Hardware Security
@@ -289,8 +305,11 @@ The Hanzo ecosystem is organized across specialized, purpose-driven GitHub organ
 | [**sqlite**](https://github.com/hanzoai/sqlite) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0302](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0302-encrypted-sqlite-replication-standard.md) | Unified SQLite facade with hardware-accelerated SQLCipher 4 encryption |
 | [**csqlite**](https://github.com/hanzoai/csqlite) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0302](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0302-encrypted-sqlite-replication-standard.md) | CGo binding for SQLCipher 4 |
 | [**sql**](https://github.com/hanzoai/sql) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0402](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0402-sql-crd.md) | Sovereign PostgreSQL database management distribution |
-| [**datastore**](https://github.com/hanzoai/datastore) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0401](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0401-datastore-crd.md) | OLAP analytics database (ClickHouse fork decoupled over S-Chain storage) |
+| [**datastore**](https://github.com/hanzoai/datastore) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0401](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0401-datastore-crd.md) | OLAP analytics database & warehouse (ClickHouse decoupled over S-Chain) |
 | [**kv**](https://github.com/hanzoai/kv) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1324](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1324-kv-buckets-of-versioned-values.md) | In-memory key-value store (RESP2/3 + native ZAP binary protocol on port 9653) |
+| [**pubsub**](https://github.com/hanzoai/pubsub) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0114](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0114-zap-inter-vm-cognitive-transport.md) | Native event streaming & pub/sub broker over zero-copy ZAP binary transport |
+| [**kafka**](https://github.com/hanzoai/kafka) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Apache Kafka wire protocol compatibility adapter for Hanzo streaming |
+| [**amqp**](https://github.com/hanzoai/amqp) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | AMQP 0-9-1 / 1.0 message broker adapter for RabbitMQ and enterprise queues |
 | [**s3**](https://github.com/hanzoai/s3) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1165](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1165-s3-buckets-and-objects.md) | "S-Chain" distributed object storage substrate (SeaweedFS fork) |
 | [**orm**](https://github.com/hanzoai/orm) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Canonical ORM supporting document `Model[T]` and relational schema |
 | [**vfs**](https://github.com/hanzoai/vfs) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0107](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0107-streaming-replication-over-vfs.md) | Content-addressed, PQ-encrypted block storage abstraction |
@@ -321,6 +340,8 @@ The Hanzo ecosystem is organized across specialized, purpose-driven GitHub organ
 | :--- | :--- | :--- | :--- |
 | [**admin**](https://github.com/hanzoai/admin) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1320](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1320-admin-the-operator-console.md) | SuperAdmin console (`admin.hanzo.ai`) & live `/code` agent session monitor |
 | [**pay**](https://github.com/hanzoai/pay) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1220](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1220-commerce-the-merchant-half.md) | Tenant-neutral embeddable checkout and payment UI (`@hanzoai/pay`) |
+| [**sentinel**](https://github.com/hanzoai/sentinel) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Sentry wire-compatible error capture, exception tracking & stack unwinder (`ghcr.io/hanzoai/sentry`) |
+| [**event**](https://github.com/hanzoai/event) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1190](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1190-event-product-analytics.md) | Telemetry & event substrate (`/v1/event`, `tag.js` auto-capture) powering analytics & insights |
 | [**analytics**](https://github.com/hanzoai/analytics) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1190](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1190-event-product-analytics.md) | Privacy-focused analytics platform (`analytics.hanzo.ai`) |
 | [**insights**](https://github.com/hanzoai/insights) | [docs.hanzo.ai](https://docs.hanzo.ai) | [docs.hanzo.ai](https://docs.hanzo.ai) | Data exploration & product intelligence (`insights.hanzo.ai`) |
 | [**studio**](https://github.com/hanzoai/studio) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0506](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0506-hanzo-studio-agentic-creative-runtime.md) | Agent creative studio & prompt workbench (`studio.hanzo.ai`) |
