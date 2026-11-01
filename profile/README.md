@@ -85,7 +85,7 @@ Governed by [**HIP-0143: Egress Outbound Trust Boundary**](https://github.com/ha
 
 ---
 
-## The "Never Go Stale" Code Generation Pipeline (HIP-0139)
+## Deterministic Code Generation Pipeline (HIP-0139)
 
 To ensure client libraries, documentation, CLI tools, and agent definitions never drift from production code, Hanzo enforces a **single-source-of-truth generation pipeline**:
 
@@ -120,13 +120,13 @@ Rust CLI        MCP Server      Client SDKs       Documentation
 * **Local Cloud Server**: `hanzoai/cloud` runs unencrypted for development via `CLOUD_DEV_UNENCRYPTED=1 make build`.
 * **Local BaaS**: `hanzoai/base` boots in-process on port `8090` using SQLite with immediate REST and realtime SSE change streams.
 * **Local Inference**: `hanzoai/engine` serves quantized GGUF models on CPU, Apple Silicon Metal, or CUDA over `/v1/chat/completions`.
-* **Coding Agents**: `hanzo dev` and `hanzoai/gen` run coding sessions locally within `hanzoai/kata` microVM sandboxes over standard I/O MCP.
+* **Coding Agents**: `hanzo dev` runs coding sessions locally within `hanzoai/kata` microVM sandboxes over standard I/O MCP.
 
 ### 2. Clustered Production Runtime
-* **High-Availability Kubernetes**: Deployed across sovereign clusters (`hanzo-k8s`, `lux-k8s`, AWS EKS).
+* **High-Availability Kubernetes**: Deployed across sovereign clusters (`hanzo-k8s`, AWS EKS, etc).
 * **Ingress & Identity Injection**: Requests pass through AWS Network Load Balancers (NLB), `hanzoai/ingress` (handling TLS termination and certificates), and stateless `hanzoai/gateway` (validating RSA-signed JWTs from `iam` and injecting trusted `X-User-Id` / `X-Org-Id` headers downstream).
 * **Unified Control Plane**: `cloud` mounts all core subsystems dynamically using the `zip` framework without code divergence.
-* **Sovereign GPU Inference**: Model routing passes through `hanzoai/ai` and `hanzo-inc/kai`, executing against resident `zenlm/zen` GPU nodes.
+* **Sovereign GPU Inference**: Model routing passes through `hanzoai/ai` and `hanzo-inc/kai`, executing against resident `hanzoai/engine` inference engine and `hanzoai/ml` framework.
 * **Continuous Delivery**: Reconciled continuously by Hanzo CD (`cd.hanzo.ai`, `hanzoai/deploy`) against declarative specs in `universe`.
 
 ### 3. Base Data Layer Composition
