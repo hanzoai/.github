@@ -145,8 +145,8 @@ Rust CLI        MCP Server      Client SDKs       Documentation
 * **High-Availability Kubernetes**: Deployed across sovereign clusters (`hanzo-k8s`, AWS EKS, etc).
 * **Ingress & Identity Injection**: Requests pass through AWS Network Load Balancers (NLB), [`hanzoai/ingress`](https://github.com/hanzoai/ingress) (handling TLS termination and certificates), and stateless [`hanzoai/gateway`](https://github.com/hanzoai/gateway) (validating RSA-signed JWTs from `iam` and injecting trusted `X-User-Id` / `X-Org-Id` headers downstream).
 * **Unified Control Plane**: [`hanzoai/cloud`](https://github.com/hanzoai/cloud) mounts all core subsystems dynamically using the [`zip`](https://github.com/zap-proto/zip) framework without code divergence.
-* **Sovereign GPU Inference**: Model routing passes through [`hanzoai/ai`](https://github.com/hanzoai/ai) and [`hanzo-inc/kai`](https://github.com/hanzo-inc/kai), executing against resident [`hanzoai/engine`](https://github.com/hanzoai/engine) inference engine and [`hanzoai/ml`](https://github.com/hanzoai/ml) framework.
-* **Continuous Delivery**: Reconciled continuously by Hanzo CD (`cd.hanzo.ai`, [`hanzoai/deploy`](https://github.com/hanzoai/deploy)) against declarative specs in [`hanzo-inc/universe`](https://github.com/hanzo-inc/universe).
+* **Sovereign GPU Inference**: Model routing passes through [`hanzoai/ai`](https://github.com/hanzoai/ai) and [`hanzoai/kai`](https://github.com/hanzoai/kai), executing against resident [`hanzoai/engine`](https://github.com/hanzoai/engine) inference engine and [`hanzoai/ml`](https://github.com/hanzoai/ml) framework.
+* **Continuous Delivery**: Reconciled continuously by Hanzo CD (`cd.hanzo.ai`, [`hanzoai/cd`](https://github.com/hanzoai/cd)) against declarative specs in [`hanzoai/deploy`](https://github.com/hanzoai/deploy).
 
 ### 3. Base Data Layer & Database-Agnostic ORM Composition
 * **Database-Agnostic ORM ([`hanzoai/orm`](https://github.com/hanzoai/orm))**: Governed by [**HIP-0144: Where State Lives**](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0144-where-state-lives.md). The Hanzo data layer is completely agnostic of the underlying SQL storage engine:
@@ -214,7 +214,7 @@ Rust CLI        MCP Server      Client SDKs       Documentation
 * **Backend In-Process Sandboxes**: Users write custom business logic and backend extensions that execute safely in sandboxed environments:
   * **ECMAScript/JS Sandboxes**: Fast execution via Goja/V8 (`.base.js`) hooks for record lifecycle events and REST API extensions.
   * **WebAssembly Sandboxes**: Multi-language extensions compiled to Wasm running inside `wasm` runtimes and isolated `kata` microVM sandboxes.
-* **Enterprise High-Performance `wasm2go` AOT**: In enterprise production ([`hanzo-inc/cloud`](https://github.com/hanzo-inc/cloud)), performance-critical Wasm modules are compiled directly into native Go assembly (`amd64.s`/`arm64.s`) via [`hanzoai/wasm2go`](https://github.com/hanzoai/wasm2go), running natively inside the "One Binary" with zero CGo overhead and zero interpreter tax.
+* **Enterprise High-Performance `wasm2go` AOT**: In enterprise production, performance-critical Wasm modules are compiled directly into native Go assembly (`amd64.s`/`arm64.s`) via [`hanzoai/wasm2go`](https://github.com/hanzoai/wasm2go), running natively inside the "One Binary" with zero CGo overhead and zero interpreter tax.
 
 ---
 
@@ -287,7 +287,7 @@ The Hanzo ecosystem is organized across specialized, purpose-driven GitHub organ
 | **Telemetry & Signals**| [`hanzoo11y`](https://github.com/hanzoo11y), [`hanzolog`](https://github.com/hanzolog), [`hanzometric`](https://github.com/hanzometric), [`hanzomsg`](https://github.com/hanzomsg), [`hanzofn`](https://github.com/hanzofn) | Observability pipelines over ZAP, metrics stores, pub/sub messaging, serverless functions |
 | **Blockchain & Fi** | [`hanzonet`](https://github.com/hanzonet), [`hanzonetwork`](https://github.com/hanzonetwork), [`hanzodao`](https://github.com/hanzodao), [`hanzo-fi`](https://github.com/hanzo-fi), [`hanzo-industries`](https://github.com/hanzo-industries), [`hanzo-agency`](https://github.com/hanzo-agency) | Hanzo validator network, consensus nodes, DeFi primitives, and specialized vertical solutions |
 | **Documentation** | [`hanzodocs`](https://github.com/hanzodocs), [`hanzo-docs`](https://github.com/hanzo-docs) | Documentation sites, LLM context indexes, and OpenAPI specifications |
-| **Enterprise Enclaves**| [`hanzo-inc`](https://github.com/hanzo-inc) | Proprietary cloud platform, private hardware kernels, and member-only enclaves |
+| **Enterprise Enclaves**| [`hanzo-enterprise`](https://github.com/hanzo-enterprise) | Proprietary cloud platform, private hardware kernels, and member-only enclaves |
 
 ---
 
@@ -318,7 +318,7 @@ The Hanzo ecosystem is organized across specialized, purpose-driven GitHub organ
 | :--- | :--- | :--- | :--- |
 | [**framework**](https://github.com/hanzoai/framework) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1126](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1126-framework-doctype-engine.md) | Metadata-driven DocType engine in native Go on SQLite (zero Python runtime) |
 | [**erp**](https://github.com/hanzoai/erp) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1126](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1126-framework-doctype-engine.md) | Sovereign Enterprise Resource Planning deployment (`erp.hanzo.ai`) |
-| [**crm**](https://github.com/hanzo-inc/crm) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1120](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1120-crm-sales-pipeline.md) | AI-native sales and customer pipeline management (`crm.hanzo.ai`) |
+| [**crm**](https://github.com/hanzoai/crm) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1120](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1120-crm-sales-pipeline.md) | AI-native sales and customer pipeline management (`crm.hanzo.ai`) |
 
 ### 4. Framework, RPC & Code Generation
 | Repository | Documentation | Specification | Description |
@@ -469,16 +469,16 @@ Governed by [**HIP-0106: The Hanzo Plugin Contract**](https://github.com/hanzoai
 
 ---
 
-## Public Open-Source vs. Sovereign Enterprise Enclave (`hanzo-inc`)
+## Public Open-Source vs. Sovereign Enterprise Cloud
 
-Hanzo operates on a clean separation between **Open Source Foundation (`hanzoai/*`)** and **Enterprise Sovereign Fleet (`hanzo-inc/*`)**:
+Hanzo operates on a clean separation between **Open Source Foundation (`hanzoai/*`)** and **Enterprise Sovereign Cloud**:
 
 ```
                        The Sovereign Developer Stack
                                      │
       ┌──────────────────────────────┴──────────────────────────────┐
       ▼                                                             ▼
-1. PUBLIC OPEN-SOURCE (hanzoai/*)             2. ENTERPRISE HOSTED ENCLAVE (hanzo-inc/*)
+1. PUBLIC OPEN-SOURCE (hanzoai/*)             2. HANZO SOVEREIGN CLOUD 
 Fork & Assemble Architecture                   Private Cloud Control Plane
 • 100% Sovereign & Self-Hostable               • Proprietary C/C++ AOT via hanzoai/wasm2go
 • Single-binary local dev (hanzoai/cloud)     • Bare-metal & GPU manager (apps/visor)
@@ -509,10 +509,10 @@ gh repo list hanzoai --limit 1000 --json name --template '{{range .}}{{if not .i
   xargs -P 16 -I {} git clone https://github.com/hanzoai/{}.git hanzo-repos/hanzoai/{}
 ```
 
-For enterprise members with access to both `hanzoai` and `hanzo-inc`:
+For enterprise members with access to Hanzo Enterprise:
 ```bash
 # Clone both public OSS and private enterprise enclaves concurrently via SSH:
-curl -fsSL https://raw.githubusercontent.com/hanzoai/.github/main/scripts/clone-all.sh | bash -s -- -o "hanzoai,hanzo-inc" -j 16
+curl -fsSL https://raw.githubusercontent.com/hanzoai/.github/main/scripts/clone-all.sh | bash -s -- -o "hanzoai,hanzo-enterprise" -j 16
 ```
 
 ---
@@ -548,8 +548,8 @@ gen --mcp
 ```
 
 ### 5. Access Consoles
-* **Admin Backend**: [admin.hanzo.ai](https://admin.hanzo.ai) ([`hanzoai/admin`](https://github.com/hanzoai/admin)) — Operator and cloud observability console
-* **Cloud Console**: [platform.hanzo.ai](https://platform.hanzo.ai) ([`hanzo-inc/platform`](https://github.com/hanzo-inc/platform)) — Unified cloud console for models, compute, data, and billing
+* **Admin Backend**: [admin.hanzo.ai](https://admin.hanzo.ai) — Operator and cloud observability console
+* **Cloud Console**: [platform.hanzo.ai](https://platform.hanzo.ai) — Unified cloud console for models, compute, data, and billing
 
 ---
 
