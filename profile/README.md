@@ -148,9 +148,15 @@ Rust CLI        MCP Server      Client SDKs       Documentation
 * **Sovereign GPU Inference**: Model routing passes through [`hanzoai/ai`](https://github.com/hanzoai/ai) and [`hanzo-inc/kai`](https://github.com/hanzo-inc/kai), executing against resident [`hanzoai/engine`](https://github.com/hanzoai/engine) inference engine and [`hanzoai/ml`](https://github.com/hanzoai/ml) framework.
 * **Continuous Delivery**: Reconciled continuously by Hanzo CD (`cd.hanzo.ai`, [`hanzoai/deploy`](https://github.com/hanzoai/deploy)) against declarative specs in [`hanzo-inc/universe`](https://github.com/hanzo-inc/universe).
 
-### 3. Base Data Layer Composition
-* **Multi-Tenant SQLite**: Each tenant/organization gets an isolated database at `/orgs/<org>/data.db`.
-* **Zero Plaintext at Rest**: Encrypted via [`hanzoai/sqlite`](https://github.com/hanzoai/sqlite) and hardware-accelerated SQLCipher 4 using keys derived from Hanzo KMS.
+### 3. Base Data Layer & Database-Agnostic ORM Composition
+* **Database-Agnostic ORM ([`hanzoai/orm`](https://github.com/hanzoai/orm))**: Governed by [**HIP-0144: Where State Lives**](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0144-where-state-lives.md). The Hanzo data layer is completely agnostic of the underlying SQL storage engine:
+  * **Fast Embedded Local Dev**: Defaults to SQLite (with SQLCipher 4 hardware encryption or in-memory) for instant, zero-dependency `hanzo up` boots without running external database containers.
+  * **Pluggable Multi-Backend Drivers**: Seamlessly switches to external SQL engines — PostgreSQL wire protocol via [`hanzoai/sql`](https://github.com/hanzoai/sql), columnar OLAP via [`hanzoai/datastore`](https://github.com/hanzoai/datastore), MySQL, MariaDB, TiDB, and CockroachDB — with identical Go application code.
+  * **Unified Type-Safe API**: Provides generic `Model[T]`, schema auto-migrations, transactional safety, and zero-allocation query building.
+* **State Ranks (HIP-0144)**:
+  * **Rank 1 (Per-Tenant File)**: [`hanzoai/base`](https://github.com/hanzoai/base) provisions isolated, per-org SQLite databases (`/orgs/<org>/data.db`) encrypted with organization-specific SQLCipher 4 keys derived from Hanzo KMS.
+  * **Rank 2 (Column Store)**: [`hanzoai/datastore`](https://github.com/hanzoai/datastore) ingests high-throughput telemetry, analytics, and event streams decoupled over S-Chain object storage ([`hanzoai/s3`](https://github.com/hanzoai/s3)).
+  * **Rank 3 (Shared SQL & KV)**: [`hanzoai/sql`](https://github.com/hanzoai/sql) and [`hanzoai/kv`](https://github.com/hanzoai/kv) provide shared clustered relational state and in-memory caches where multi-tenant concurrency requires a centralized server.
 * **Streaming Replication**: Replicated in real time via [`hanzoai/vfs`](https://github.com/hanzoai/vfs) blocks to S-Chain distributed object storage ([`hanzoai/s3`](https://github.com/hanzoai/s3)).
 * **In-Process JavaScript Hooks**: Business logic runs in sandboxed ECMAScript VMs via Goja (`.base.js`).
 
@@ -184,17 +190,24 @@ Rust CLI        MCP Server      Client SDKs       Documentation
 * **Business Intelligence & OLAP Warehouse (`insights.hanzo.ai` & [`hanzoai/datastore`](https://github.com/hanzoai/datastore))**: Columnar OLAP engine decoupled over S-Chain object store ([`hanzoai/s3`](https://github.com/hanzoai/s3)). Powers arbitrary SQL aggregations, retention cohorts, conversion funnels, and revenue attribution.
 * **Event Streaming & Protocol Adapters**: In-memory and persisted event pub/sub via [`hanzoai/pubsub`](https://github.com/hanzoai/pubsub) over ZAP binary transport (port `9653`), with zero-code protocol bridges for Kafka ([`hanzoai/kafka`](https://github.com/hanzoai/kafka)) and AMQP message queues ([`hanzoai/amqp`](https://github.com/hanzoai/amqp)).
 
-### 9. Autonomous Headless Agentic Commerce & Treasury
-* **Sovereign Commerce Engine ([`hanzoai/commerce`](https://github.com/hanzoai/commerce))**: Built on Hanzo's foundational commerce, analytics, and billing platform.
+### 9. Autonomous Headless Agentic Commerce, Billing & Treasury
+* **Sovereign Commerce Engine ([`hanzoai/commerce`](https://github.com/hanzoai/commerce))**: Governed by [**HIP-1220**](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1220-commerce-the-merchant-half.md). Built on Hanzo's foundational commerce, analytics, and billing platform.
 * **Headless Agent Provisioning**: Fully optimized for autonomous AI agents. Any agent can programmatically provision an organization, generate an API key, test on the free tier, and autonomously top up compute credits via native cryptocurrency (EIP-712 USDC / native MPC treasury rails), saved payment cards, or bank wires.
-* **Financial AI & Treasury**: Autonomous trading agents can generate wallets, connect exchange accounts, and manage automated treasury operations through unified APIs.
+* **Customer Billing & Metering ([`hanzoai/billing`](https://github.com/hanzoai/billing))**: Real-time spend tracking, balance ledgers, usage metering (`/v1/usage`, [HIP-1313](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1313-usage-the-metered-record.md)), and customer billing portal (`billing.hanzo.ai`).
+* **Financial AI & Treasury Rails ([`hanzoai/treasury`](https://github.com/hanzoai/treasury))**: Governed by [**HIP-1001**](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1001-books-double-entry-ledger.md). Multi-tenant double-entry accounting ledger (`books`), bank clearinghouse connections, automated payment routing, and financial reconciliation.
+* **Multi-Chain Key Custody & Wallet ([`hanzoai/wallet`](https://github.com/hanzoai/wallet))**: Governed by [**HIP-1161**](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1161-wallet-key-custody.md). Multi-chain SIWx signature verification, automated agent clearinghouse, and secure key custody.
 
-### 10. AI Substrate & Decentralized AI Network (Phase 1 ➔ Phase 2)
+### 10. Corporate Legal, Capital Rails & Document Security
+* **Sovereign Equity & Cap Table Management ([`hanzoai/captable`](https://github.com/hanzoai/captable))**: Governed by [**HIP-1111**](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1111-captable.md). Sovereign equity, share classes, option pools, stakeholder ledgers, and automated vesting schedules (`captable.hanzo.ai`).
+* **Cryptographic Tamper-Evident E-Signatures ([`hanzoai/esign`](https://github.com/hanzoai/esign))**: Governed by [**HIP-1125**](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1125-esign-signatures.md). Self-hosted document e-signature platform with verifiable digital audit trails, hash proofs, and field placement (`esign.hanzo.ai`).
+* **Secure Virtual Data Rooms ([`hanzoai/dataroom`](https://github.com/hanzoai/dataroom))**: Governed by [**HIP-1121**](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1121-dataroom-shared-documents.md). Encrypted document sharing with dynamic viewer watermarking, role-based granular access revocation, and tamper-evident audit logs (`dataroom.hanzo.ai`).
+
+### 11. AI Substrate & Decentralized AI Network (Phase 1 ➔ Phase 2)
 * **Core ML Framework ([`hanzoai/ml`](https://github.com/hanzoai/ml))**: Multi-backend Rust tensor computation and machine learning toolkit (`hanzo-ml`, CUDA, Metal, ROCm, Vulkan).
 * **LLM Inference Server ([`hanzoai/engine`](https://github.com/hanzoai/engine))**: High-performance multimodal inference server supporting GGUF, CUDA, Metal, and ISQ quantization over `/v1/chat/completions`.
 * **Sovereign Node & P2P AI Mesh ([`hanzoai/node`](https://github.com/hanzoai/node))**: Blockchain node embedding the inference engine, shipped with the Hanzo desktop app to mine AI and connect local compute with cloud inference — paving the way for a global decentralized AI network for distributed training, inference, and a P2P compute marketplace.
 
-### 11. Multi-Tenant Organizations, Unified IAM & Sandboxed Extensibility
+### 12. Multi-Tenant Organizations, Unified IAM & Sandboxed Extensibility
 * **Sovereign Identity Protocol (`did:hanzo:<org>:<user>`)**: Governed by [HIP-0097](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0097-clean-node-identity-did-hanzo-name.md) and `@hanzo/iam` (`hanzo.id`). Cryptographic user authentication, organization membership, and RBAC via RSA/ECDSA-signed JWT claims.
 * **Per-Tenant Data & Key Isolation**: Every organization gets an independent SQLite database at `/orgs/<org>/data.db` encrypted with organization-specific SQLCipher 4 keys derived from Hanzo KMS, coupled with isolated ZAP pub/sub topic trees.
 * **Frontend Runtime Customization**: Developers customize application look and feel dynamically using mod themes (`@hanzo/mod`), `@hanzo/ui`, and `@hanzo/design` tokens without rebuilding or recompiling frontend distributions.
@@ -344,18 +357,18 @@ The Hanzo ecosystem is organized across specialized, purpose-driven GitHub organ
 ### 7. Sovereign Data Plane & Storage
 | Repository | Documentation | Specification | Description |
 | :--- | :--- | :--- | :--- |
-| [**base**](https://github.com/hanzoai/base) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1104](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1104-base-hosted-backend.md) | Multi-tenant BaaS with encrypted per-org SQLite instances & realtime sync |
-| [**sqlite**](https://github.com/hanzoai/sqlite) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0302](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0302-encrypted-sqlite-replication-standard.md) | Unified SQLite facade with hardware-accelerated SQLCipher 4 encryption |
+| [**base**](https://github.com/hanzoai/base) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1104](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1104-base-hosted-backend.md) | Multi-tenant BaaS with isolated per-org SQLite instances (HIP-0144 Rank 1 state) & realtime SSE sync |
+| [**sqlite**](https://github.com/hanzoai/sqlite) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0302](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0302-encrypted-sqlite-replication-standard.md) | Unified SQLite facade with hardware SQLCipher 4 encryption for fast embedded local dev |
 | [**csqlite**](https://github.com/hanzoai/csqlite) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0302](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0302-encrypted-sqlite-replication-standard.md) | CGo binding for SQLCipher 4 |
-| [**sql**](https://github.com/hanzoai/sql) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0402](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0402-sql-crd.md) | Sovereign relational SQL database management distribution |
-| [**datastore**](https://github.com/hanzoai/datastore) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0401](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0401-datastore-crd.md) | OLAP analytics database & warehouse decoupled over S-Chain distributed storage |
+| [**sql**](https://github.com/hanzoai/sql) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0402](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0402-sql-crd.md) | Clustered relational SQL engine (PostgreSQL wire protocol) for shared Rank 3 state |
+| [**datastore**](https://github.com/hanzoai/datastore) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0401](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0401-datastore-crd.md) | High-throughput columnar OLAP analytics database (HIP-0144 Rank 2 state) decoupled over S-Chain |
 | [**kv**](https://github.com/hanzoai/kv) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1324](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1324-kv-buckets-of-versioned-values.md) | In-memory key-value store (RESP2/3 + native ZAP binary protocol on port 9653) |
 | [**pubsub**](https://github.com/hanzoai/pubsub) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1060](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1060-pubsub-the-tenant-door-on-the-bus.md) | Native event streaming & pub/sub broker over zero-copy ZAP binary transport |
 | [**kafka**](https://github.com/hanzoai/kafka) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1323](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1323-kafka-the-wire-every-client-speaks.md) | Kafka wire protocol compatibility adapter for Hanzo streaming |
 | [**amqp**](https://github.com/hanzoai/amqp) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1326](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1326-amqp-exchanges-queues-and-bindings.md) | AMQP 0-9-1 / 1.0 message broker adapter for enterprise queues |
 | [**mq**](https://github.com/hanzoai/mq) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1326](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1326-amqp-exchanges-queues-and-bindings.md) | Distributed message & job queue built on Hanzo KV (Valkey/Redis compatible) |
 | [**s3**](https://github.com/hanzoai/s3) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-1165](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1165-s3-buckets-and-objects.md) | "S-Chain" distributed, content-addressed object storage substrate |
-| [**orm**](https://github.com/hanzoai/orm) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0144](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0144-where-state-lives.md) | Canonical ORM supporting document `Model[T]` and relational schema |
+| [**orm**](https://github.com/hanzoai/orm) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0144](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0144-where-state-lives.md) | Database-agnostic Go ORM (SQLite for fast embedded local dev; supports PostgreSQL, Datastore, MySQL) with `Model[T]` |
 | [**vfs**](https://github.com/hanzoai/vfs) | [docs.hanzo.ai](https://docs.hanzo.ai) | [HIP-0107](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0107-streaming-replication-over-vfs.md) | Content-addressed, PQ-encrypted block storage abstraction |
 
 ### 8. Code Intelligence, AST/LSP & Vector Search
