@@ -80,7 +80,7 @@ Sovereign Data Plane                     hanzoai/ai, Tasks & Agents
 Governed by [**HIP-0143: Egress Outbound Trust Boundary**](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0143-egress-outbound-trust-boundary.md), Hanzo enforces a zero-leakage perimeter for all external network interactions:
 1. **Credential-Free Internal Calls**: Internal services (`hanzoai/ai`, `auto`, `tasks`, coding agents) never store or receive raw external API keys. Outbound requests reference only scoped credential identifiers (`credential_id`).
 2. **Outbound Boundary Enforcement (`hanzoai/egress`)**: Network policies force all outbound traffic through the `egress` proxy. `egress` evaluates organization rate limits, checks token balance tariffs, scrubs internal headers, and records tamper-evident audit spans.
-3. **In-Flight Key Injection via Split-MPC**: `egress` contacts Hanzo KMS (`kms.hanzo.ai`, [`hanzokms/kms`](https://github.com/hanzokms), [`hanzompc/mpc`](https://github.com/hanzompc)). Quorum threshold shares (FROST/CGGMP21/Pulsar) or physical hardware HSMs unwrap the key in-flight, injecting the token directly into the outbound HTTP authorization header in RAM.
+3. **In-Flight Key Injection via Split-MPC**: `egress` contacts Hanzo KMS (`kms.hanzo.ai`, [`hanzoai/kms`](https://github.com/hanzokms), [`hanzoai/mpc`](https://github.com/hanzoai/mpc)). Quorum threshold shares (FROST/CGGMP21/Pulsar) or physical hardware HSMs unwrap the key in-flight, injecting the token directly into the outbound HTTP authorization header in RAM.
 4. **External Dispatch**: Requests are dispatched over TLS to external providers. Credentials never touch disk, container environment variables, or model reasoning contexts, and responses stream directly back through `egress`.
 
 ---
@@ -188,7 +188,7 @@ Rust CLI        MCP Server      Client SDKs       Documentation
 
 ## Cryptography & Key Management: Split MPC & Hardware Security
 
-Governed by [**HIP-0136: One Secret, One Path**](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0136-one-secret-one-path.md) and [**HIP-0409: KMS CRD**](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0409-kms-crd.md), **Hanzo KMS** (`kms.hanzo.ai`, [`hanzoai/kms`](https://github.com/hanzoai/kms)) is a thin, high-performance Go service layered over [`luxfi/kms`](https://github.com/luxfi/kms) and [`luxfi/mpc`](https://github.com/luxfi/mpc):
+Governed by [**HIP-0136: One Secret, One Path**](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0136-one-secret-one-path.md) and [**HIP-0409: KMS CRD**](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0409-kms-crd.md), **Hanzo KMS** (`kms.hanzo.ai`, [`hanzoai/kms`](https://github.com/hanzoai/kms)) is a thin, high-performance Go service layered over [`hanzoai/mpc`](https://github.com/hanzoai/mpc):
 
 ```
                        Hanzo KMS (kms.hanzo.ai)
