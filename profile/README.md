@@ -47,7 +47,7 @@ Hanzo unifies every layer of the modern cloud and AI stack into an open, zero-tr
   hanzoai/gateway (Stateless Gateway: JWT Auth, Quota/Rate Limiting, Identity Injection)
                    │
                    ▼
-  hanzoai/cloud (The Unified "One Binary" Control Plane — Lazy-Loads All /v1/* APIs)
+  hanzoai/cloud (Unified "One Binary" Control Plane — Lazy-Loads All /v1/* APIs)
    ├─ IAM (hanzo.id) & KMS (kms.hanzo.ai)
    ├─ Model Hub (500+ LLMs, Routing, Prompting, RAG)
    ├─ Multi-Tenant BaaS (Base + Encrypted SQLite)
@@ -65,10 +65,10 @@ Sovereign Data Plane                     hanzoai/ai, Tasks & Agents
 • SQL (Relational Engine)                hanzoai/egress (Outbound Security Boundary)
 • Datastore (Columnar OLAP Engine)              │ (Rate Limits, Redaction, Audit Spans)
 • KV (In-Memory RESP/ZAP)                       ▼
-• S3 (S-Chain Object Store)              Hanzo KMS & Split-MPC (kms.hanzo.ai)
+• S3 (S-Chain Object Store)              Hanzo KMS & MPC Nodes
                                          (In-Flight Ephemeral Key Unwrapping / HSM)
                                                 │
-                                                ▼ (TLS Dispatch With Injected Auth)
+                                                ▼ (Egress Dispatch With Injected Auth)
                                          External Partner APIs & BYOK Providers
                                          (Model Providers, Payment Gateways, Webhooks)
 ```
