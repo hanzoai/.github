@@ -58,16 +58,28 @@ Hanzo unifies every layer of the modern cloud and AI stack into an open, zero-tr
    ├─ Realtime ZAP Telemetry Ingestion (o11y Spans/Metrics/Logs)
    └─ In-Cluster BuildKit Job Dispatch (/v1/build)
                    │
-    ┌──────────────┴──────────────┐
-    ▼                             ▼
-Sovereign Data Plane        hanzoai/egress
-• Base (Multi-tenant BaaS)  (Outbound trust boundary:
-• SQLite (SQLCipher 4)      credentials stay sealed in KMS,
-• SQL (PostgreSQL DBMS)     metered external API calls,
-• Datastore (ClickHouse)    and BYOK provider proxying)
-• KV (In-Memory RESP/ZAP)
-• S3 (S-Chain Object Store)
+    ┌──────────────┴────────────────────────────┐
+    ▼                                           ▼
+Sovereign Data Plane                     hanzoai/ai, Tasks & Agents
+• Base (Multi-tenant BaaS)                      │
+• SQLite (SQLCipher 4)                          ▼ (Credential-Free Outbound Call)
+• SQL (PostgreSQL DBMS)                  hanzoai/egress (Outbound Security Boundary)
+• Datastore (ClickHouse)                        │ (Rate Limits, Redaction, Audit Spans)
+• KV (In-Memory RESP/ZAP)                       ▼
+• S3 (S-Chain Object Store)              Hanzo KMS & Split-MPC (kms.hanzo.ai)
+                                         (In-Flight Ephemeral Key Unwrapping / HSM)
+                                                │
+                                                ▼ (TLS Dispatch With Injected Auth)
+                                         Third-Party APIs & BYOK Providers
+                                         (OpenAI, Anthropic, Stripe, Webhooks)
 ```
+
+### Outbound Trust Boundary: `AI ➔ Egress ➔ KMS/MPC ➔ Third Party`
+Governed by [**HIP-0143: Egress Outbound Trust Boundary**](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0143-egress-outbound-trust-boundary.md), Hanzo enforces a zero-leakage perimeter for all external network interactions:
+1. **Credential-Free Internal Calls**: Internal services (`hanzoai/ai`, `auto`, `tasks`, coding agents) never store or receive raw third-party API keys. Outbound requests reference only scoped credential identifiers (`credential_id`).
+2. **Outbound Boundary Enforcement (`hanzoai/egress`)**: Kubernetes network policies force all outbound traffic through the `egress` proxy. `egress` evaluates organization rate limits, checks token balance tariffs, scrubs internal headers, and records tamper-evident audit spans.
+3. **In-Flight Key Injection via Split-MPC**: `egress` contacts Hanzo KMS (`kms.hanzo.ai`, [`hanzokms/kms`](https://github.com/hanzokms), [`hanzompc/mpc`](https://github.com/hanzompc)). Quorum threshold shares (FROST/CGGMP21/Pulsar) or physical hardware HSMs unwrap the key in-flight, injecting the token directly into the outbound HTTP authorization header in RAM.
+4. **Third-Party Dispatch**: Requests are dispatched over TLS to external providers (OpenAI, Anthropic, Stripe, cloud GPU clusters, partner webhooks). Credentials never touch disk, container environment variables, or model reasoning contexts, and responses stream directly back through `egress`.
 
 ---
 
