@@ -17,13 +17,31 @@
 <p align="center">
   <a href="https://hanzo.ai"><strong>hanzo.ai</strong></a> ·
   <a href="https://docs.hanzo.ai"><strong>Documentation</strong></a> ·
-  <a href="https://docs.hanzo.ai/llms.txt"><strong>LLM Context (llms.txt)</strong></a> ·
-  <a href="https://hips.hanzo.ai"><strong>HIPs Specifications</strong></a> ·
+  <a href="https://docs.hanzo.ai/docs/contributing"><strong>Contributing</strong></a> ·
+  <a href="https://discord.gg/XthHQQj"><strong>Discord</strong></a> ·
+  <a href="https://hanzo.ai/bounty"><strong>Bounties</strong></a> ·
+  <a href="https://hips.hanzo.ai"><strong>HIPs</strong></a> ·
   <a href="https://hanzoskills.com"><strong>Skills</strong></a> ·
-  <a href="https://hanzo.market"><strong>Market</strong></a> ·
-  <a href="https://forge.hanzo.ai"><strong>Forge</strong></a> ·
-  <a href="https://hanzo.sh"><strong>CLI (hanzo.sh)</strong></a>
+  <a href="https://docs.hanzo.ai/llms.txt"><strong>llms.txt</strong></a>
 </p>
+
+---
+
+## Quickstart & Onboarding
+
+```bash
+npm i -g hanzo                 # install on any OS (or: curl -fsSL https://hanzo.sh | sh)
+hanzo auth login               # sign in and mint an API key
+hanzo dev                      # launch the terminal coding agent
+npx -y hanzo mcp               # start the MCP server over stdio
+```
+
+| Path | Where to go |
+| :--- | :--- |
+| **Start building** | [Quickstart](https://docs.hanzo.ai/docs/quickstart) · [For Agents (`llms.txt`)](https://docs.hanzo.ai/docs/agents) · [Try Dev in Browser](https://hanzo.ai/dev) |
+| **Contribute** | [Contributor Guide](https://docs.hanzo.ai/docs/contributing) · [Open Bounties](https://hanzo.ai/bounty) · [Leaderboard](https://hanzo.ai/leaderboard) |
+| **Community** | [Join Hanzo Discord](https://discord.gg/XthHQQj) (`#docs` for docs feedback, `#hips` for proposals, `#general` for engineering) |
+| **Specifications** | [Hanzo Improvement Proposals (HIPs)](https://hips.hanzo.ai) ([`hanzoai/hips`](https://github.com/hanzoai/hips)) |
 
 ---
 
@@ -132,6 +150,9 @@ Rust CLI        MCP Server      Client SDKs       Documentation
 
 ## Runtime Composition
 
+<details>
+<summary><strong>Expand 12 Runtime Subsystems (Local Dev, Clustered Production, ORM, ZAP, Visor, AST/LSP, BuildKit, O11y, Commerce, Legal, AI Network, Multi-Tenant IAM)</strong></summary>
+
 ### 1. Local Dev Runtime
 * **Single Binary Footprint**: Run on a laptop with zero cloud dependencies.
 * **One-Command Boot (`hanzo up`)**: Boots the entire unified Hanzo cloud locally, lazy-loading each service (`/v1/*`) on-demand!
@@ -216,6 +237,8 @@ Rust CLI        MCP Server      Client SDKs       Documentation
   * **WebAssembly Sandboxes**: Multi-language extensions compiled to Wasm running inside `wasm` runtimes and isolated `kata` microVM sandboxes.
 * **Enterprise High-Performance `wasm2go` AOT**: In enterprise production, performance-critical Wasm modules are compiled directly into native Go assembly (`amd64.s`/`arm64.s`) via [`hanzoai/wasm2go`](https://github.com/hanzoai/wasm2go), running natively inside the "One Binary" with zero CGo overhead and zero interpreter tax.
 
+</details>
+
 ---
 
 ## Cryptography & Key Management: Split MPC & Hardware Security
@@ -271,6 +294,9 @@ To ensure high performance across every ecosystem without code duplication, Hanz
 
 ## The 70+ Hanzo GitHub Organizations
 
+<details>
+<summary><strong>Expand Organization Directory (Core, SDKs, IAM/KMS, Data, Models, Agents, Apps, UI, DevOps, Telemetry, Chain, Docs)</strong></summary>
+
 The Hanzo ecosystem is organized across specialized, purpose-driven GitHub organizations:
 
 | Domain | Organizations | Primary Responsibility |
@@ -289,9 +315,14 @@ The Hanzo ecosystem is organized across specialized, purpose-driven GitHub organ
 | **Documentation** | [`hanzodocs`](https://github.com/hanzodocs), [`hanzo-docs`](https://github.com/hanzo-docs) | Documentation sites, LLM context indexes, and OpenAPI specifications |
 | **Enterprise Enclaves**| [`hanzo-enterprise`](https://github.com/hanzo-enterprise) | Proprietary cloud platform, private hardware kernels, and member-only enclaves |
 
+</details>
+
 ---
 
 ## Master Repository Catalog (`hanzoai/*`)
+
+<details>
+<summary><strong>Expand Full Repository Catalog across 13 Architecture Domains</strong></summary>
 
 ### 1. Edge, Traffic, Security & Cloud Control Plane
 | Repository | Documentation | Specification | Description |
@@ -468,6 +499,8 @@ Governed by [**HIP-0106: The Hanzo Plugin Contract**](https://github.com/hanzoai
 * **Search, Crawl & Code Intelligence**: [`search`](https://github.com/hanzoai/search) ([HIP-1147](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1147-search-hybrid-retrieval.md)), [`index`](https://github.com/hanzoai/index) ([HIP-1132](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1132-index-search.md)), [`crawl`](https://github.com/hanzoai/crawl) ([HIP-1117](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1117-crawl.md)), [`code`](https://github.com/hanzoai/code) ([HIP-1114](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1114-code.md)), [`lsp`](https://github.com/hanzoai/lsp) ([HIP-1214](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1214-lsp-live-code-intelligence.md)), [`graph`](https://github.com/hanzoai/graph) ([HIP-1198](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1198-graph-assertion-plane.md)).
 * **Cloud Infrastructure, Telemetry & Networking**: [`compute`](https://github.com/hanzoai/compute) ([HIP-1172](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1172-visor-compute-you-rent.md)), `environment` ([HIP-1339](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1339-environment-codebase-preflight-and-secrets.md)), `space` ([HIP-1337](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1337-space-workspaces-drives-and-files.md)), [`dns`](https://github.com/hanzoai/dns) ([HIP-1321](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1321-dns-zones-and-records.md)), [`flags`](https://github.com/hanzoai/flags) ([HIP-0063](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0063-feature-flags-standard.md)), [`functions`](https://github.com/hanzoai/functions) ([HIP-0060](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0060-serverless-functions-standard.md)), [`o11y`](https://github.com/hanzoai/o11y) ([HIP-1240](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1240-o11y-the-observability-plane.md)), [`pubsub`](https://github.com/hanzoai/pubsub) ([HIP-1060](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1060-pubsub-the-tenant-door-on-the-bus.md)), [`kafka`](https://github.com/hanzoai/kafka) ([HIP-1323](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1323-kafka-the-wire-every-client-speaks.md)), [`amqp`](https://github.com/hanzoai/amqp) ([HIP-1326](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1326-amqp-exchanges-queues-and-bindings.md)), [`mq`](https://github.com/hanzoai/mq) ([HIP-1326](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1326-amqp-exchanges-queues-and-bindings.md)), [`sites`](https://github.com/hanzoai/sites) ([HIP-1231](https://github.com/hanzoai/hips/blob/main/HIPs/hip-1231-projects-the-site-store.md)), [`plugin`](https://github.com/hanzoai/plugin) ([HIP-0106](https://github.com/hanzoai/hips/blob/main/HIPs/hip-0106-hanzo-plugin-contract.md)).
 
+</details>
+
 ---
 
 ## Public Open-Source vs. Sovereign Enterprise Cloud
@@ -515,42 +548,6 @@ For enterprise members with access to Hanzo Enterprise:
 # Clone both public OSS and private enterprise enclaves concurrently via SSH:
 curl -fsSL https://raw.githubusercontent.com/hanzoai/.github/main/scripts/clone-all.sh | bash -s -- -o "hanzoai,hanzo-enterprise" -j 16
 ```
-
----
-
-## Quickstart: Run Hanzo on Your Machine
-
-### 1. Install the Sovereign CLI & Authenticate
-```bash
-curl -fsSL https://hanzo.sh | sh
-hanzo auth login
-```
-
-### 2. Boot the Entire Cloud Locally (`hanzo up`)
-```bash
-# Boots the unified cloud control plane locally, lazy-loading each service on demand
-hanzo up
-```
-
-### 3. Install Hanzo Extensions & Model Context Protocol (MCP)
-Install our IDE & browser extensions and unified MCP server to control the entire system:
-* **IDE & Browser Extensions**: [`hanzoai/extension`](https://github.com/hanzoai/extension)
-* **Model Context Protocol (Rust & TypeScript)**: [`hanzoai/mcp`](https://github.com/hanzoai/mcp) (`@hanzo/mcp` / `hanzo-mcp`)
-* **Python MCP Server**:
-  ```bash
-  uvx hanzo-mcp
-  ```
-
-### 4. Launch Local Coding Agent
-```bash
-hanzo dev
-# Or with MCP integration:
-gen --mcp
-```
-
-### 5. Access Consoles
-* **Admin Backend**: [admin.hanzo.ai](https://admin.hanzo.ai) — Operator and cloud observability console
-* **Cloud Console**: [platform.hanzo.ai](https://platform.hanzo.ai) — Unified cloud console for models, compute, data, and billing
 
 ---
 
