@@ -285,7 +285,8 @@ To ensure high performance across every ecosystem without code duplication, Hanz
 | **Swift** | [**hanzoai/swift-sdk**](https://github.com/hanzoai/swift-sdk) | [**hanzo-swift/sdk**](https://github.com/hanzo-swift/sdk) | Swift Package Manager | `.package(url: "...", ...)` |
 | **Dart / Flutter**| [**hanzoai/dart-sdk**](https://github.com/hanzoai/dart-sdk) | [**hanzo-dart/sdk**](https://github.com/hanzo-dart/sdk) | pub.dev (`hanzo`) | `dart pub add hanzo` |
 | **Kotlin** | [**hanzoai/kotlin-sdk**](https://github.com/hanzoai/kotlin-sdk) | [**hanzo-kt/sdk**](https://github.com/hanzo-kt/sdk) | Maven Central | `implementation("ai.hanzo:sdk")`|
-| **Java** | [**hanzoai/java-sdk**](https://github.com/hanzoai/java-sdk) | [**hanzo-java/sdk**](https://github.com/hanzo-java/sdk) | Maven Central | `<groupId>ai.hanzo</groupId>` |
+| **Java** | [**hanzoai/java-sdk**](https://github.com/hanzoai/java-sdk) | [**hanzo-java/sdk**](https://github.com/hanzo-java/sdk) | Maven Central (`ai.hanzo:hanzo-java-cloud`) | `implementation("ai.hanzo:hanzo-java-cloud")` |
+| **C# / .NET** | [**hanzoai/csharp-sdk**](https://github.com/hanzoai/csharp-sdk) | [**hanzo-csharp/sdk**](https://github.com/hanzo-csharp/sdk) | NuGet (`Hanzo`) | `dotnet add package Hanzo` |
 | **PHP** | [**hanzoai/php-sdk**](https://github.com/hanzoai/php-sdk) | [**hanzo-php/sdk**](https://github.com/hanzo-php/sdk) | Packagist (`hanzoai/sdk`) | `composer require hanzoai/sdk` |
 | **Ruby** | [**hanzoai/ruby-sdk**](https://github.com/hanzoai/ruby-sdk) | [**hanzo-ruby/sdk**](https://github.com/hanzo-ruby/sdk) | RubyGems (`hanzoai`) | `gem install hanzoai` |
 | **Common Lisp** | [**hanzo-cl**](https://github.com/hanzo-cl) | [**hanzo-cl/sdk**](https://github.com/hanzo-cl/sdk) | Quicklisp | `(ql:quickload :hanzo)` |
