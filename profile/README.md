@@ -43,7 +43,7 @@ npx -y hanzo mcp               # start the MCP server over stdio
 
 | Path | Where to go |
 | :--- | :--- |
-| **Start building** | [Quickstart](https://docs.hanzo.ai/docs/quickstart) · [For Agents (`llms.txt`)](https://docs.hanzo.ai/docs/agents) · [Try Dev in Browser](https://hanzo.ai/dev) |
+| **Start building** | [Quickstart](https://docs.hanzo.ai/docs/quickstart) · [For Agents (`llms.txt`)](https://docs.hanzo.ai/docs/agents) · [Try Hanzo in Browser](https://hanzo.app) |
 | **Self-host / Air-gapped** | [Self-Hosting & Air-Gapped Guide](https://docs.hanzo.ai/docs/self-hosting) · [`hanzoai/cloud`](https://github.com/hanzoai/cloud) · [`hanzoai/engine`](https://github.com/hanzoai/engine) · [`hanzoai/iam`](https://github.com/hanzoai/iam) |
 | **Contribute** | [Contributor Guide](https://docs.hanzo.ai/docs/contributing) · [Open Bounties](https://hanzo.ai/bounty) · [Leaderboard](https://hanzo.ai/leaderboard) |
 | **Community** | [Join Hanzo Discord](https://discord.gg/XthHQQj) (`#docs` for docs feedback, `#hips` for proposals, `#general` for engineering) |
