@@ -17,6 +17,7 @@
 <p align="center">
   <a href="https://hanzo.ai"><strong>hanzo.ai</strong></a> ·
   <a href="https://docs.hanzo.ai"><strong>Documentation</strong></a> ·
+  <a href="https://hanzo.ai/security"><strong>Security</strong></a> ·
   <a href="https://docs.hanzo.ai/docs/self-hosting"><strong>Self-Hosting &amp; Air-Gapped</strong></a> ·
   <a href="https://docs.hanzo.ai/docs/contributing"><strong>Contributing</strong></a> ·
   <a href="https://discord.gg/XthHQQj"><strong>Discord</strong></a> ·
@@ -32,10 +33,13 @@
 
 ```bash
 npm i -g hanzo                 # install on any OS (or: curl -fsSL https://hanzo.sh | sh)
+hanzo doctor --verify          # verify installed binaries against GitHub Release SHA-256 checksums
 hanzo auth login               # sign in and mint an API key
 hanzo dev                      # launch the terminal coding agent
 npx -y hanzo mcp               # start the MCP server over stdio
 ```
+
+> Every binary installed by [`hanzo.sh`](https://github.com/hanzoai/hanzo.sh) is verified against GitHub Release SHA-256 checksums (pass `--strict` for GitHub release attestation verification), or build directly from source with `cargo install --path .` in [`hanzoai/cli`](https://github.com/hanzoai/cli).
 
 | Path | Where to go |
 | :--- | :--- |
@@ -43,6 +47,7 @@ npx -y hanzo mcp               # start the MCP server over stdio
 | **Self-host / Air-gapped** | [Self-Hosting & Air-Gapped Guide](https://docs.hanzo.ai/docs/self-hosting) · [`hanzoai/cloud`](https://github.com/hanzoai/cloud) · [`hanzoai/engine`](https://github.com/hanzoai/engine) · [`hanzoai/iam`](https://github.com/hanzoai/iam) |
 | **Contribute** | [Contributor Guide](https://docs.hanzo.ai/docs/contributing) · [Open Bounties](https://hanzo.ai/bounty) · [Leaderboard](https://hanzo.ai/leaderboard) |
 | **Community** | [Join Hanzo Discord](https://discord.gg/XthHQQj) (`#docs` for docs feedback, `#hips` for proposals, `#general` for engineering) |
+| **Security & Trust** | [Security Architecture](https://hanzo.ai/security) · [Security Policy](https://github.com/hanzoai/.github/blob/main/SECURITY.md) · [`security.txt`](https://hanzo.ai/.well-known/security.txt) · SHA-256 verified installs (`hanzo doctor --verify`) |
 | **Specifications** | [Hanzo Improvement Proposals (HIPs)](https://hips.hanzo.ai) ([`hanzoai/hips`](https://github.com/hanzoai/hips)) |
 
 ---
@@ -57,7 +62,7 @@ You do not need Kubernetes, PostgreSQL, or a hosted API key to test Hanzo locall
 | **Model Engine** | [`hanzoai/engine`](https://github.com/hanzoai/engine) | Static Rust binary (`hanzoai` / `hanzo-engine`) | `127.0.0.1:1234` (HTTP + `/ui`) | Local open-weight LLM, vision, audio & embedding inference (`/v1/chat/completions`, `/v1/embeddings`, Anthropic `/v1/messages`) + built-in offline web UI at `/ui` |
 | **Identity (IAM)** | [`hanzoai/iam`](https://github.com/hanzoai/iam) | Go binary + embedded SQLite | `127.0.0.1:8000` (HTTP) | OIDC discovery, OAuth2 PKCE, JWKS (`/v1/iam/.well-known/jwks`), SCIM 2.0, and org JWTs for `/v1/kms` secrets |
 | **AI Router** | [`hanzoai/ai`](https://github.com/hanzoai/ai) | Go binary (`cmd/aid`) / Docker | `:8000` (configurable) | Multi-model routing, RAG, and metering across local `engine` nodes or upstream providers |
-| **Chat Client** | [`hanzoai/chat`](https://github.com/hanzoai/chat) | Static Vite + React SPA (`@hanzo/chat`) | `localhost:3090` (dev) | Multi-conversation web workspace pointed at a local stack via `VITE_HANZO_API` and `VITE_HANZO_IAM` |
+| **App Workspace** | [`hanzoai/app`](https://github.com/hanzoai/app) | `@hanzo/app` + `@hanzo/gui` (`hanzo.app`) | `localhost:3000` (dev) | Multi-surface Chat, Dev, Design, and Terminal workspace pointed at local `hanzod` (`127.0.0.1:3690`) or your self-hosted stack |
 
 ### 60-Second Local Smoke Test
 
