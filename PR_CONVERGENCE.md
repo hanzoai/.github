@@ -30,3 +30,12 @@ Every open PR resolves to exactly one of five dispositions:
 - **Automated qualification**: Sci, QA, and Cyber automated verification qualifies engineering changes; merge only on green CI.
 - **Deployment vs. build**: Never confuse a green build with a verified production deployment.
 - **Regulatory boundary**: Never launch regulated financial products or public token sales without legal qualification and explicit launch authorization.
+
+## External Research & Bounty PR Policy
+
+Every external research and bounty PR across `hanzoai/*` and `hanzo-inc/*` MUST satisfy four invariants:
+
+1. **Public reproducibility**: Evaluate on real, appropriately licensed, versioned public datasets with deterministic seeds and documented commands. Reserve synthetic data strictly for deterministic unit tests.
+2. **Private qualification**: Hanzo private evaluation corpora, proprietary routing data, and confidential labels are **never** exported externally. Contributors implement the reproducible benchmark harness; authorized Hanzo runners execute confidential qualification internally and publish approved aggregate-only receipts.
+3. **Canonical implementation**: Consume canonical Hanzo registries, catalogs, and shipping implementations as baselines. Do not introduce duplicate routers, pricing tables, or permanently disconnected research prototypes.
+4. **Measurable improvement**: Production integration and bounty acceptance require verified improvement in quality, cost, latency, or reliability over the shipping baseline. No payment or merge for unsubstantiated or synthetic-only performance claims.
